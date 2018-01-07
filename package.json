@@ -1,0 +1,14 @@
+{
+  "name": "ecolifex",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Fuzzy Sheu",
+  "license": "MIT",
+  "dependencies": {
+    "electron": "^1.7.10"
+  }
+}
