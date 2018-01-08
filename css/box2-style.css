@@ -25,19 +25,28 @@
   /* border-style: solid; */
   padding: 3px;
 }
-.box1 {
-  display: auto;
-  margin: auto;
-  border-style: dashed;
-  width: 180px;
-  height: 120px;
+
+.tr_1, .tr_3 {
+  background-color: rgb(219, 219, 219);
 }
-.box2 {
+
+.box {
   display: auto;
   margin: auto;
   border-style: dashed;
+  border-radius: 10%;
   width: 180px;
-  height: 120px;
+  height: 100px;
+  text-align: center;
+}
+
+.material-icons.image {
+  font-size: 4rem;
+  line-height: 100px;
+}
+
+.tabs .indicator {
+  color: blue;
 }
 
 /*body {
