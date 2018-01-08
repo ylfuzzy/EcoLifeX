@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Eco Life X</title>
+  <!--Import Google Icon Font-->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!--Import materialize.css-->
+  <link href="css/materialize.css" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="css/box2-style.css">
+</head>
+<body>
+    <div class="row">
+        <div class="col s12">
+          <ul class="tabs tabs-fixed-width">
+            <li class="tab col s3"><a class="active" href="#inspect">巡檢</a></li>
+            <li class="tab col s3"><a href="#clear">清理</a></li>
+            <li class="tab col s3"><a href="#login">登入</a></li>
+            <li class="tab col s3"><a href="#setting">設定</a></li>
+          </ul>
+        </div>
+        <!--<div id="test1" class="col s12">Test 1</div>-->
+        <div id="inspect" class="col s12">
+          <div class="tabContent"></div>
+        </div>
+        <div id="clear" class="col s12">
+          <div class="tabContent"></div>
+        </div>
+        <div id="login">To be continue...</div>
+        <div id="setting">To be continue...</div>
+        <!-- <div id="test3" class="col s12">Test 3</div>
+        <div id="test4" class="col s12">Test 4</div> -->
+      </div>
+
+  <!-- Insert this line above script imports  -->
+  <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+
+  <!-- normal script imports etc  -->
+  <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.js"></script>
+  <script type="text/javascript" src="js/materialize.js"></script>  
+
+  <!-- Insert this line after script imports -->
+  <script>if (window.module) module = window.module;</script>
+
+  <script>
+    function clickTest() {
+      alert('It works!');
+    }
+  </script>
+
+  <!-- Load contents from another html -->
+  <script> 
+    $(function() {
+      $(".tabContent").load("tab.html"); 
+    });
+  </script> 
+
+  
+</body>
+</html>
