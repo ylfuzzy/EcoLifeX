@@ -4,9 +4,18 @@
   width: 100%;
   position: relative;
 }
+
+.css_td.title {
+  height: calc(100vh / 18);
+  text-align: center;
+  vertical-align: bottom;
+  font-size: 20px;
+}
+
 .css_tr {
   display: table-row;
 }
+
 .css_td {
   display: table-cell;
   /* height: auto; */
