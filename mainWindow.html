@@ -43,8 +43,11 @@
   <!-- Load contents from another html -->
   <script> 
     $(function() {
-      $(".tabContent").load("tab.html");
+      $('.tabContent').load('tab.html');
+      var tabHandler = 'js/util/tabHandler.js';
+      $.getScript(tabHandler);
     });
-  </script> 
+  </script>
+  <script src="js/util/tabHandler.js"></script>
 </body>
 </html>
