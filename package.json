@@ -9,6 +9,10 @@
   "author": "Fuzzy Sheu",
   "license": "MIT",
   "dependencies": {
-    "electron": "^1.7.10"
+    "electron": "^1.7.10",
+    "sharp": "^0.19.0"
+  },
+  "devDependencies": {
+    "electron-rebuild": "^1.7.3"
   }
 }

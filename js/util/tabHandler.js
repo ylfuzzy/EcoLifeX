@@ -1,5 +1,3 @@
-
-
 $(document).ready(function() {
   var dialogOpened = false;
   $('.css_td').on('click', '.box, .preview', function() {
@@ -7,25 +5,14 @@ $(document).ready(function() {
     if (!dialogOpened) {
       dialogOpened = true;
       const {dialog} = require('electron').remote;
-      var clickedElement = $(this);
-      var parent = clickedElement.parent();
+      var elements = new Object();
+      elements.clickedElement = $(this);
+      elements.parent = elements.clickedElement.parent();
       var options = {filters: [{name: 'Images', extensions: ['jpg', 'png']}]};
       dialog.showOpenDialog(options, function(imgPaths) {
         try {
-          console.log(imgPaths[0]);
-          console.log(parent);
-          var classes = parent.attr('class');
-          var imgHtml = '<img class="preview' + classes.replace('css_td', '') + '"' + 'src="' + imgPaths[0] + '">';
-          clickedElement.remove();
-          parent.append(imgHtml);
-
-
-          getFileContentAsBase64(imgPaths[0],function(base64Image){
-            console.log('base64!!!!!');
-            //window.open(base64Image);
-            console.log(base64Image); 
-            // Then you'll be able to handle the myimage.png file as base64
-          });
+          elements.imgPath = imgPaths[0];
+          appendPreviewImg(elements);
         } catch (err) {
           //logMyErrors(err);
           console.log('catched');
@@ -37,3 +24,17 @@ $(document).ready(function() {
     }
   });
 });
+
+function appendPreviewImg(elements) {
+  const sharp = require('sharp');
+  sharp(elements.imgPath)
+  .resize(undefined, 300)
+  .toBuffer(function(err, imgBuffer, info) {
+    var imgBase64 = imgBuffer.toString('base64');
+    var classes = elements.parent.attr('class');
+    var imgHtml = '<img class="preview' + classes.replace('css_td', '') + '"' + 'src="data:image/jpeg;base64,' + imgBase64 + '">';
+    elements.clickedElement.remove();
+    elements.parent.append(imgHtml);
+  });
+}
+
