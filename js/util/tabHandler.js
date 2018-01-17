@@ -23,18 +23,43 @@ $(document).ready(function() {
       });
     }
   });
-});
 
-function appendPreviewImg(elements) {
-  const sharp = require('sharp');
-  sharp(elements.imgPath)
-  .resize(undefined, 300)
-  .toBuffer(function(err, imgBuffer, info) {
-    var imgBase64 = imgBuffer.toString('base64');
-    var classes = elements.parent.attr('class');
-    var imgHtml = '<img class="preview' + classes.replace('css_td', '') + '"' + 'src="data:image/jpeg;base64,' + imgBase64 + '">';
-    elements.clickedElement.remove();
-    elements.parent.append(imgHtml);
+  $('.css_td').on('drop', '.box, .preview', function() {
+    droppedElement = $(this);
+    droppedElement.css('box-shadow', '');
+    console.log(droppedElement);
   });
-}
+
+  $('.css_td').on('dragover', '.box, .preview', function() {
+    $(this).css('box-shadow', '0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)');
+  });
+
+  $('.css_td').on('dragleave', '.box, .preview', function() {
+    $(this).css('box-shadow', '');
+  });
+
+  $('.css_td').on('contextmenu', '.preview', function() {
+    var clickedPreviewImg = $(this);
+    var parent = clickedPreviewImg.parent();
+    var classes = parent.attr('class');
+    var boxHtml = '<div class="box' + classes.replace('css_td', '') + '">'
+                    + '<i class="material-icons image">add_a_photo</i>'
+                  +'</div>';
+    clickedPreviewImg.remove();
+    parent.append(boxHtml);
+  });
+
+  function appendPreviewImg(elements) {
+    const sharp = require('sharp');
+    sharp(elements.imgPath)
+    .resize(undefined, 300)
+    .toBuffer(function(err, imgBuffer, info) {
+      var imgBase64 = imgBuffer.toString('base64');
+      var classes = elements.parent.attr('class');
+      var imgHtml = '<img class="preview' + classes.replace('css_td', '') + '"' + 'src="data:image/jpeg;base64,' + imgBase64 + '">';
+      elements.clickedElement.remove();
+      elements.parent.append(imgHtml);
+    });
+  }
+});
 

@@ -51,5 +51,20 @@
     });
   </script>
   <script src="js/util/tabHandler.js"></script>
+  <!-- Prevent drag & drop default events  -->
+  <script>
+  $(document).on('drop', function(e) {
+    e.preventDefault();
+    //e.stopPropagation();
+  });
+  $(document).on('dragover', function(e) {
+    e.preventDefault();
+    //e.stopPropagation();
+  });
+  /* $(webview).on('drop', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }); */
+  </script>
 </body>
 </html>
