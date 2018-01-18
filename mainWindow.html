@@ -43,11 +43,19 @@
   <!-- Load contents from another html -->
   <script> 
     $(function() {
+      // Load tabs
       $('.tabContent').load('tab.html');
+      // Load login
+      $('#tab_login').load('login.html');
+      // Load setting
+      $('#tab_setting').load('setting.html');
+
+      // Load js handler for tab pages
       var tabHandler = 'js/util/tabHandler.js';
-      // for canvas test
-      var canvasTest = 'js/util/canvasTest.js';
       $.getScript(tabHandler);
+      var loginHandler = 'js/util/loginHandler.js';
+      var settingHandler = 'js/util/settingHandler.js';
+      $.getScript(settingHandler);
     });
   </script>
   <script src="js/util/tabHandler.js"></script>
@@ -61,10 +69,6 @@
     e.preventDefault();
     //e.stopPropagation();
   });
-  /* $(webview).on('drop', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-  }); */
   </script>
 </body>
 </html>

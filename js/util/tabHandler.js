@@ -6,8 +6,8 @@ $(document).ready(function() {
       dialogOpened = true;
       const {dialog} = require('electron').remote;
       var elements = new Object();
-      elements.clickedElement = $(this);
-      elements.parent = elements.clickedElement.parent();
+      elements.current = $(this);
+      elements.parent = elements.current.parent();
       var options = {filters: [{name: 'Images', extensions: ['jpg', 'png']}]};
       dialog.showOpenDialog(options, function(imgPaths) {
         try {
@@ -24,10 +24,14 @@ $(document).ready(function() {
     }
   });
 
-  $('.css_td').on('drop', '.box, .preview', function() {
-    droppedElement = $(this);
-    droppedElement.css('box-shadow', '');
-    console.log(droppedElement);
+  $('.css_td').on('drop', '.box, .preview', function(e) {
+    $(this).css('box-shadow', '');
+    var elements = new Object();
+    elements.current = $(this);
+    elements.parent = elements.current.parent();
+    elements.imgPath = e.originalEvent.dataTransfer.files[0].path;
+    appendPreviewImg(elements);
+    console.log(elements.imgPath);
   });
 
   $('.css_td').on('dragover', '.box, .preview', function() {
@@ -57,7 +61,7 @@ $(document).ready(function() {
       var imgBase64 = imgBuffer.toString('base64');
       var classes = elements.parent.attr('class');
       var imgHtml = '<img class="preview' + classes.replace('css_td', '') + '"' + 'src="data:image/jpeg;base64,' + imgBase64 + '">';
-      elements.clickedElement.remove();
+      elements.current.remove();
       elements.parent.append(imgHtml);
     });
   }
