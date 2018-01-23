@@ -19,6 +19,7 @@ $(document).ready(function() {
           console.log(err.message);
         } finally {
           dialogOpened = false;
+          updateCss_trClassAttr(elements.parent.parent());
         }
       });
     }
@@ -64,6 +65,19 @@ $(document).ready(function() {
       elements.current.remove();
       elements.parent.append(imgHtml);
     });
+  }
+
+  function updateCss_trClassAttr(css_tr) {
+    console.log(css_tr);
+    var css_tds = css_tr.children();
+    var counter = 0;
+    for (var i = 0; i < css_tds.length; i++) {
+      /* if (css_tds[i].children.hasClass('preview')) {
+        counter++;
+      } */
+      console.log(css_tds[i].children[0]);
+    }
+    console.log(counter);
   }
 });
 
