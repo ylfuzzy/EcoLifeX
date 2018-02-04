@@ -1,7 +1,3 @@
-const {ipcRenderer} = require('electron');
-const RENDERER_REQ = {ADD_IMG: 'REQ:ADD_IMG', DEL_IMG: 'REQ:DEL_IMG'};
-const MAIN_REPLY = {ADD_IMG: 'REPLY:ADD_IMG', DEL_IMG: 'REPLY:DEL_IMG'};
-
 // Select image by dialog
 let dialogOpened = false;
 $('.css_td').on('click', '.box, .preview', function() {
@@ -62,8 +58,12 @@ $('.css_td').on('contextmenu', '.preview', function() {
   ipcRenderer.send(RENDERER_REQ.DEL_IMG, packet);
 });
 
-ipcRenderer.on(MAIN_REPLY.ADD_IMG, function(e, packet) {
-  updateHtml(packet, MAIN_REPLY.ADD_IMG);
+ipcRenderer.on(MAIN_REPLY.ADD_IMG.ACCEPTED, function(e, packet) {
+  updateHtml(packet, MAIN_REPLY.ADD_IMG.ACCEPTED);
+});
+
+ipcRenderer.on(MAIN_REPLY.ADD_IMG.DENIED, function(e, packet) {
+  console.log(packet.deniedError);
 });
 
 ipcRenderer.on(MAIN_REPLY.DEL_IMG, function(e, packet) {
@@ -105,7 +105,7 @@ function unpack(packet, replyType) {
   unpackedData.parent = unpackedData.current.parent();
   let htmlContent;
   switch (replyType) {
-    case MAIN_REPLY.ADD_IMG:
+    case MAIN_REPLY.ADD_IMG.ACCEPTED:
       htmlContent = '<img class="preview' + unpackedData.parent.attr('class').replace('css_td', '') + '" src="' + packet.imgBase64 + '">';
       break;
     case MAIN_REPLY.DEL_IMG:

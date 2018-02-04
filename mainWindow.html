@@ -50,16 +50,20 @@
       // Load setting
       $('#tab_setting').load('setting.html');
 
+      // Load global vars
+      var renderGlobalVar = 'js/renderer/renderGlobalVar.js';
+      $.getScript(renderGlobalVar);
+
       // Load js handlers for tab pages
-      var tabHandler = 'js/util/tabHandler2.js';
+      var tabHandler = 'js/renderer/tabHandler2.js';
       $.getScript(tabHandler);
-      var loginHandler = 'js/util/loginHandler.js';
+      var loginHandler = 'js/renderer/loginHandler.js';
       $.getScript(loginHandler);
-      var settingHandler = 'js/util/settingHandler.js';
+      var settingHandler = 'js/renderer/settingHandler.js';
       $.getScript(settingHandler);
     });
   </script>
-  <script src="js/util/tabHandler.js"></script>
+  <!-- <script src="js/util/tabHandler.js"></script> -->
   <!-- Prevent drag & drop default events  -->
   <script>
   $(document).on('drop', function(e) {
