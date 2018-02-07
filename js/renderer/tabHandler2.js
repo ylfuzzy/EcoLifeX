@@ -58,11 +58,13 @@ $('.css_td').on('contextmenu', '.preview', function() {
   ipcRenderer.send(RENDERER_REQ.DEL_IMG, packet);
 });
 
+// callback when main accepted a image
 ipcRenderer.on(MAIN_REPLY.ADD_IMG.ACCEPTED, function(e, packet) {
   updateHtml(packet, MAIN_REPLY.ADD_IMG.ACCEPTED);
 });
 
-ipcRenderer.on(MAIN_REPLY.ADD_IMG.DENIED, function(e, packet) {
+// callback when main rejected a image
+ipcRenderer.on(MAIN_REPLY.ADD_IMG.REJECTED, function(e, packet) {
   console.log(packet.deniedError);
 });
 

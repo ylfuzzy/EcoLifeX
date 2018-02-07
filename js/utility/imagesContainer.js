@@ -1,10 +1,25 @@
+class ImageData {
+  constructor() {
+    this.path = undefined;
+    this.dateTimeOriginal = undefined;
+  }
+  addData(packet) {
+    this.path = packet.imgPath;
+    this.dateTimeOriginal = packet.dateTimeOriginal;
+  }
+  deleteData() {
+    this.path = undefined;
+    this.dateTimeOriginal = undefined;
+  }
+}
+
 class ImageSet {
   constructor() {
-    this.dirty = undefined;
-    this.clean = undefined;
+    this.dirty = new ImageData();
+    this.clean = new ImageData();
   }
   isPaired() {
-    return (typeof this.dirty !== 'undefined' && typeof this.clean !== 'undefined');
+    return (typeof this.dirty.path !== 'undefined' && typeof this.clean.path !== 'undefined');
   }
 }
 
@@ -19,11 +34,23 @@ class ImagesContainer {
   }
 
   addImage(packet) {
-    this[packet.tabID][packet.tr_n][packet.imgType] = packet.imgPath;
+    this[packet.tabID][packet.tr_n][packet.imgType].addData(packet);
   }
 
   deleteImage(packet) {
-    this[packet.tabID][packet.tr_n][packet.imgType] = undefined;
+    this[packet.tabID][packet.tr_n][packet.imgType].deleteData();
+  }
+
+  getImage(packet) {
+    return this[packet.tabID][packet.tr_n][packet.imgType];
+  }
+
+  getImagesForCInspect() {
+    return this.tab_inspect;
+  }
+
+  getImagesForCleanUp() {
+    return this.tab_clean_up;
   }
 }
 

@@ -11,8 +11,7 @@ const RENDERER_REQ = {ADD_IMG: 'REQ:ADD_IMG', DEL_IMG: 'REQ:DEL_IMG', GO: 'REQ:G
 const MAIN_REPLY = {
   ADD_IMG: {
     ACCEPTED: 'REPLY:ADD_IMG:ACCEPTED',
-    DENIED: 'REPLY:ADD_IMG:DENIED'
-    },
+    REJECTED: 'REPLY:ADD_IMG:REJECTED'},
   DEL_IMG: 'REPLY:DEL_IMG'
 };
 
@@ -33,15 +32,16 @@ app.on('ready', function() {
 
 ipcMain.on(RENDERER_REQ.ADD_IMG, function(e, packet) {
   (async function() {
-    let imgInfo = await getImageValidityInfo(packet);
+    let imgInfo = await getImageValidity(packet);
     let replyType;
     if (imgInfo.isValid) {
+      packet.dateTimeOriginal = imgInfo.dateTimeOriginal;
       replyType = MAIN_REPLY.ADD_IMG.ACCEPTED;
       updateImagesContainer(replyType, packet);
     } else {
       console.log(imgInfo.error);
       packet.deniedError = imgInfo.error;
-      replyType = MAIN_REPLY.ADD_IMG.DENIED;
+      replyType = MAIN_REPLY.ADD_IMG.REJECTED;
     }
     replyRendererReq(replyType, packet);
   })();
@@ -58,33 +58,58 @@ ipcMain.on(RENDERER_REQ.GO, function(e) {
   autoProcess();
 });
 
-async function getImageValidityInfo(packet) {
-  let newImagePath = packet.imgPath;
+async function getImageValidity(packet) {
+  let newImgPath = packet.imgPath;
   let comparedImgType = (packet.imgType === 'dirty') ? 'clean' : 'dirty';
-  let comparedImgPath = imagesContainer[packet.tabID][packet.tr_n][comparedImgType];
-  return await ImagesProcessor.isValidImage(newImagePath, comparedImgPath);
+  comparedPacket = {tabID: packet.tabID, tr_n: packet.tr_n, imgType: comparedImgType};
+  let comparedImgDateTimeOriginal = imagesContainer.getImage(comparedPacket).dateTimeOriginal;
+  console.log(imagesContainer.getImage(comparedPacket));
+  console.log('check!!!: ' + comparedImgDateTimeOriginal);
+  return await ImagesProcessor.isValidImage(newImgPath, comparedImgDateTimeOriginal);
 }
 
 async function autoProcess() {
   let autoModel = new AutoModel();
-  let flag_cleanUp = true;
   await autoModel.login();
-  //await autoModel.renewRoute(flag_cleanUp);
-  await autoModel.publishDiary(flag_cleanUp);
+  await autoModel.deletePreviousDrafts();
+  //await autoModel.renewRoute(false);
+  /* let imgSetsForInspect = [];
+  let imgSetsForCleanUp = [];
+  for (tr_n in imagesContainer.tab_inspect) {
+    if (imagesContainer.tab_inspect[tr_n].isPaired()) {
+      imgSetsForInspect.push(imagesContainer.tab_inspect[tr_n]);
+    }
+    if (imagesContainer.tab_clean_up[tr_n].isPaired()) {
+      imgSetsForCleanUp.push(imagesContainer.tab_clean_up[tr_n]);
+    }
+  }
+  let isForCleanUp = true;
+  if (imgSetsForInspect.length !== 0 || imgSetsForCleanUp.length !== 0) {
+    let autoModel = new AutoModel();
+    await autoModel.login();
+    //await autoModel.renewRoute(isForCleanUp);
+    for (let i = 0; i < imgSetsForInspect.length; i++) {
+      await autoModel.publishJournal(imgSetsForInspect[i], !isForCleanUp);
+    }
+    for (let i = 0; i < imgSetsForCleanUp.length; i++) {
+      await autoModel.publishJournal(imgSetsForCleanUp[i], isForCleanUp);
+    }
+  } else {
+    console.log('There is no image set can be uploaded');
+  } */
 }
 
 function updateImagesContainer(replyType, packet) {
-  let imgPath;
   switch (replyType) {
     case MAIN_REPLY.ADD_IMG.ACCEPTED:
-      imgPath = packet.imgPath;
+      imagesContainer.addImage(packet);
       break;
     case MAIN_REPLY.DEL_IMG:
-      imgPath = undefined;
+      imagesContainer.deleteImage(packet);
       break;
   }
-  imagesContainer[packet.tabID][packet.tr_n][packet.imgType] = imgPath;
-  console.log(imagesContainer);
+//  imagesContainer[packet.tabID][packet.tr_n][packet.imgType] = imgPath;
+  console.log(imagesContainer.getImage(packet));
 }
 
 function sendBase64(packet) {
@@ -103,7 +128,7 @@ function replyRendererReq(replyType, packet) {
     case MAIN_REPLY.ADD_IMG.ACCEPTED:
       sendBase64(packet);
       break;
-    case MAIN_REPLY.ADD_IMG.DENIED:
+    case MAIN_REPLY.ADD_IMG.REJECTED:
     case MAIN_REPLY.DEL_IMG:
       mainWindow.webContents.send(replyType, packet);
       break;
