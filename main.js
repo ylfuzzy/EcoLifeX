@@ -69,11 +69,11 @@ async function getImageValidity(packet) {
 }
 
 async function autoProcess() {
-  let autoModel = new AutoModel();
+  /* let autoModel = new AutoModel();
   await autoModel.login();
-  await autoModel.deletePreviousDrafts();
+  await autoModel.deletePreviousDrafts(); */
   //await autoModel.renewRoute(false);
-  /* let imgSetsForInspect = [];
+  let imgSetsForInspect = [];
   let imgSetsForCleanUp = [];
   for (tr_n in imagesContainer.tab_inspect) {
     if (imagesContainer.tab_inspect[tr_n].isPaired()) {
@@ -96,7 +96,7 @@ async function autoProcess() {
     }
   } else {
     console.log('There is no image set can be uploaded');
-  } */
+  }
 }
 
 function updateImagesContainer(replyType, packet) {

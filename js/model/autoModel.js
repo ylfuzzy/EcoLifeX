@@ -246,21 +246,26 @@ class AutoModel {
     let maxTrial = 5;
     while (trial < maxTrial) {
       try {
-        await this.__goToPublishPage(isForCleanUp);
-        await this.__selectTimeRange(imageSet, isForCleanUp);
-        await this.__selectRoute();
-        await this.__clickJournalCreationButton(isForCleanUp);
-        await this.__selectTrashIcon();
-        await this.__clickRandomWhiteSquare();
-        await this.__selectArea();
-        await this.__uplaodImageSet(imageSet);
-        await this.__deleteJournalDraft();
+        await this.__createJournal(imageSet, isForCleanUp);
+        await this.__fillInAndPublishJournal(imageSet);
+        //await this.__deleteJournalDraft();
         break;
       } catch (err) {
         console.log('publish journal: ' + trial);
         console.log(err);
         trial++
       }
+    }
+  }
+
+  async __createJournal(imageSet, isForCleanUp) {
+    try {
+      await this.__goToPublishPage(isForCleanUp);
+      await this.__selectTimeRange(imageSet, isForCleanUp);
+      await this.__selectRoute();
+      await this.__clickJournalCreationButton(isForCleanUp);
+    } catch (err) {
+      throw err;
     }
   }
 
@@ -295,8 +300,8 @@ class AutoModel {
       let css_endMinutesOptions = '#cphMain_ucDateTime_cboMinuteEnd option';
       let css_cleanUpOnly_endDateOptions = '#cphMain_ucDateTime_cboDayEnd option';
       let css_dateTimeSelectors = [css_yearOptions, css_monthOptions, css_dateOptions,
-                                    css_beginHoursOptions, css_beginMinutesOptions, css_endHoursOptions,
-                                      css_endMinutesOptions, css_cleanUpOnly_endDateOptions];
+                                    css_beginHoursOptions, css_beginMinutesOptions, css_endHoursOptions, css_endMinutesOptions,
+                                      css_cleanUpOnly_endDateOptions];
       let selectorsLength = isForCleanUp ? css_dateTimeSelectors.length : css_dateTimeSelectors.length - 1;
       for (let idx_selector = 0; idx_selector < selectorsLength; idx_selector++) {
         let dateTimeOptions = await this.driver.wait(until.elementsLocated(By.css(css_dateTimeSelectors[idx_selector])), timeout);
@@ -348,6 +353,28 @@ class AutoModel {
     } catch (err) {
       console.log('__clickJournalCreationButton');
       throw err;
+    }
+  }
+
+  async __fillInAndPublishJournal(imageSet) {
+    let trial = 0;
+    let maxTrial = 5;
+    while (true) {
+      try {
+        await this.__selectTrashIcon();
+        await this.__clickRandomWhiteSquare();
+        await this.__selectArea();
+        await this.__uplaodImageSet(imageSet);
+        break;
+      } catch (err) {
+        if (trial < maxTrial) {
+          console.log(err);
+          await this.driver.navigate().refresh();
+          trial++;
+        } else {
+          throw err;
+        }
+      }
     }
   }
 
