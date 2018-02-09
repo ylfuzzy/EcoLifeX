@@ -5,11 +5,43 @@ const chrome = require('selenium-webdriver/chrome');
 const path = __base + 'js/model/chromedriver';
 const service = new chrome.ServiceBuilder(path).build();
 chrome.setDefaultService(service);
+//const fs = require('fs');
+
+/* const chromeCapabilities = Capabilities.chrome();
+chromeCapabilities.set('chromeOptions', {args: ['disable-gpu', 'headless', 'window-size=1280,720']}); */
+
+/* const driver = new webdriver.Builder()
+  .forBrowser('chrome')
+  .withCapabilities(chromeCapabilities)
+  .build(); */
+/* const ERROR_TYPES = {
+  WRONG_ID_PASSWD: 'WRONG_ID_PASSWD', UNEXPECTED_ALERT: 'UNEXPECTED_ALERT', TIMEOUT: 'TIMEOUT', UNKNOWN: 'UNKNOWN'}; */
 
 class AutoModel {
   constructor() {
     console.log(path);
     this.driver = new Builder().withCapabilities(Capabilities.chrome()).build();
+    this.ERROR_TYPES = {
+      WRONG_ID_PASSWD: 'WRONG_ID_PASSWD', UNEXPECTED_ALERT: 'UNEXPECTED_ALERT', TIMEOUT: 'TIMEOUT', UNKNOWN: 'UNKNOWN'};
+  }
+
+  async headlessTest() {
+    try {
+      // Navigate to google.com, enter a search.
+    await this.driver.get('https://www.google.com/');
+    /* await this.driver.findElement({name: 'q'}).sendKeys('webdriver');
+    await this.driver.findElement({name: 'btnG'}).click();
+    await this.driver.wait(webdriver.until.titleIs('webdriver - Google Search'), 1000); */
+
+    // Take screenshot of results page. Save to disk.
+    this.driver.takeScreenshot().then(base64png => {
+      fs.writeFileSync('screenshot.png', new Buffer(base64png, 'base64'));
+    });
+
+    await this.driver.quit();
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   /**
@@ -19,34 +51,34 @@ class AutoModel {
     let timeout = 5000;
     let trial = 0;
     let maxTrial = 5;
-    while (trial < maxTrial) {
+    while (true) {
       try {
         // fill up user id & password
-        let testID = '1002101051';
-        let testPasswd = 'east1002101051';
-        await this.__fillUpIdPasswd(testID, testPasswd);
+        let testID = '1002101033';
+        let testPasswd = 'east1002101033';
+        await this.__fillInIDPasswd(testID, testPasswd);
 
         // try click "go to admin button"
         await this.__goToAdmin();
         break;
-      } catch (err) {
+      } catch (errFromOrigin) {
         console.log('login trial: ' + trial);
-        if (err instanceof SeleniumError.UnexpectedAlertOpenError) {
-          let alertMessage = await this.driver.switchTo().alert().getText();
-          let typoString = '很抱歉，您輸入的帳號無法登入，可能原因為帳號輸入錯誤';
-          if (alertMessage.includes(typoString)) {
-            console.log(alertMessage);
-            break;
-          }
-        } else {
-          console.log(err);
+        let errToMain = errFromOrigin;
+        errToMain.stage = 'login';
+        if (errToMain.type === this.ERROR_TYPES.WRONG_ID_PASSWD || errToMain.type === this.ERROR_TYPES.UNEXPECTED_ALERT) {
+          throw errToMain
+        }
+        if (trial < maxTrial) {
+          console.log(errFromOrigin);
           trial++;
+        } else {
+          throw errToMain;
         }
       }
     }
   }
 
-  async __fillUpIdPasswd(userID, userPasswd) {
+  async __fillInIDPasswd(userID, userPasswd) {
     try {
       let timeout = 5000;
       let homePage = 'https://ecolife.epa.gov.tw/';
@@ -58,7 +90,8 @@ class AutoModel {
       await this.driver.wait(until.elementLocated(By.id(id_tf_passwd)), timeout).sendKeys(userPasswd);
       await this.driver.wait(until.elementLocated(By.id(id_btn_login)), timeout).click();
     } catch (err) {
-      throw err;
+      let errToThrow = await this.__checkError('__fillInIDPasswd', err);
+      throw errToThrow;
     }
   }
 
@@ -73,13 +106,17 @@ class AutoModel {
         await this.driver.wait(until.titleContains('管理後台'), timeout);
         break;
       } catch (err) {
+        let errToThrow = await this.__checkError('__goToAdmin', err);
+        if (errToThrow.type === this.ERROR_TYPES.WRONG_ID_PASSWD || errToThrow.type === this.ERROR_TYPES.UNEXPECTED_ALERT) {
+          throw errToThrow;
+        }
         if (trial < maxTrial) {
-          console.log(err);
+          console.log(errToThrow);
           let homePage = 'https://ecolife.epa.gov.tw/';
           await this.driver.get(homePage);
           trial++;
         } else {
-          throw err;
+          throw errToThrow;
         }
       }
     }
@@ -242,18 +279,39 @@ class AutoModel {
    *  The following is for upload image
    */
   async publishJournal(imageSet, isForCleanUp) {
+    let timeout = 5000;
     let trial = 0;
     let maxTrial = 5;
-    while (trial < maxTrial) {
+    while (true) {
       try {
         await this.__createJournal(imageSet, isForCleanUp);
         await this.__fillInAndPublishJournal(imageSet);
-        //await this.__deleteJournalDraft();
+        
+        // To check whether the journal is succesfully published
+        await this.__checkPublishStatus();
         break;
-      } catch (err) {
+        /* let finalAlert = await this.driver.wait(until.alertIsPresent(), timeout);
+        let message = await finalAlert.getText();
+        await finalAlert.accept();
+        if (message.includes('已經發表成功')) {
+          console.log('goooooooood');
+          return true;
+        } else if (message.includes('拍攝時間不符合')) {
+          return false;
+        } */
+      } catch (errFromOrigin) {
         console.log('publish journal: ' + trial);
-        console.log(err);
-        trial++
+        console.log(errFromOrigin);
+        let errToMain = errFromOrigin;
+        errToMain.stage = 'publishJournal';
+        if (errToMain.type === this.ERROR_TYPES.UNEXPECTED_ALERT || errToMain.type === this.ERROR_TYPES.UNKNOWN) {
+          throw errToMain;
+        }
+        if (trial < maxTrial) {
+          trial++
+        } else {
+          throw errToMain;
+        }
       }
     }
   }
@@ -264,8 +322,8 @@ class AutoModel {
       await this.__selectTimeRange(imageSet, isForCleanUp);
       await this.__selectRoute();
       await this.__clickJournalCreationButton(isForCleanUp);
-    } catch (err) {
-      throw err;
+    } catch (errFromOrigin) {
+      throw errFromOrigin;
     }
   }
 
@@ -275,12 +333,10 @@ class AutoModel {
     page += isForCleanUp ? 'clear.aspx' : 'inspect.aspx';
     try {
       await this.driver.get(page);
-      let alert = await this.driver.wait(until.alertIsPresent(), timeout);
-      await alert.accept();
+      await this.__acceptAlertAndGetText();
     } catch(err) {
-      console.log('__goToPublishPage');
-      console.log(err);
-      throw err;
+      let errToThrow = await this.__checkError('__goToPublishPage', err);
+      throw errToThrow;
     }
   }
 
@@ -314,8 +370,8 @@ class AutoModel {
         }
       }
     } catch (err) {
-      console.log('__selectTimeRange');
-      throw err;
+      let errToThrow = await this.__checkError('__selectTimeRange', err);
+      throw errToThrow;
     }
   }
 
@@ -327,8 +383,8 @@ class AutoModel {
       let idx_firstRoute = 1;
       await routeOptions[idx_firstRoute].click();
     } catch (err) {
-      console.log('__selectRoute');
-      throw err;
+      let errToThrow = await this.__checkError('__selectRoute', err);
+      throw errToThrow;
     }
   }
 
@@ -337,22 +393,24 @@ class AutoModel {
     try {
       let id_btn_createJournal = 'cphMain_btnOk';
       await this.driver.wait(until.elementLocated(By.id(id_btn_createJournal)), timeout).click();
-      let alert = await this.driver.wait(until.alertIsPresent(), timeout);
-      await alert.accept();
+      /* let alert = await this.driver.wait(until.alertIsPresent(), timeout);
+      await alert.accept(); */
+      await this.__acceptAlertAndGetText();
 
       // If the date is a week before the current date
 		  // there will be another popup alert.
       if (!isForCleanUp) {
         try {
-          alert = await this.driver.wait(until.alertIsPresent(), timeout);
-          await alert.accept();
+          /* alert = await this.driver.wait(until.alertIsPresent(), timeout);
+          await alert.accept(); */
+          await this.__acceptAlertAndGetText();
         } catch (err) {
           console.log('Since images are not taken a week before today, there is no another alert');
         }
       }
     } catch (err) {
-      console.log('__clickJournalCreationButton');
-      throw err;
+      let errToThrow = await this.__checkError('__clickJournalCreationButton', err);
+      throw errToThrow;
     }
   }
 
@@ -361,44 +419,39 @@ class AutoModel {
     let maxTrial = 5;
     while (true) {
       try {
-        await this.__selectTrashIcon();
+        await this.__clickTrashIcon();
         await this.__clickRandomWhiteSquare();
         await this.__selectArea();
         await this.__uplaodImageSet(imageSet);
+        await this.__clickJournalPublishbutton();
         break;
-      } catch (err) {
+      } catch (errFromOrigin) {
+        console.log(errFromOrigin);
+        if (errFromOrigin.type === this.ERROR_TYPES.UNEXPECTED_ALERT) {
+          throw errFromOrigin;
+        }
         if (trial < maxTrial) {
-          console.log(err);
           await this.driver.navigate().refresh();
           trial++;
         } else {
-          throw err;
+          throw errFromOrigin;
         }
       }
     }
   }
 
-  async __selectTrashIcon() {
+  async __clickTrashIcon() {
     let timeout = 5000;
     let trial = 0;
     let maxTrial = 5;
-    while (true) {
-      try {
-        let id_btn_iconSelection = 'cphMain_btnIcon';
-        await this.driver.wait(until.elementLocated(By.id(id_btn_iconSelection)), timeout).click();
-        let xpath_trashIcon = '//*[@id="cphMain_ucIcon_divEcolife"]/ul[2]/li[10]/a';
-        await this.driver.wait(until.elementLocated(By.xpath(xpath_trashIcon)), timeout).click();
-        break;
-      } catch (err) {
-        if (trial < maxTrial) {
-          console.log(err);
-          await this.driver.navigate().refresh();
-          trial++;
-        } else {
-          console.log('__selectTrashIcon');
-          throw err;
-        }
-      }
+    try {
+      let id_btn_iconSelection = 'cphMain_btnIcon';
+      await this.driver.wait(until.elementLocated(By.id(id_btn_iconSelection)), timeout).click();
+      let xpath_trashIcon = '//*[@id="cphMain_ucIcon_divEcolife"]/ul[2]/li[10]/a';
+      await this.driver.wait(until.elementLocated(By.xpath(xpath_trashIcon)), timeout).click();
+    } catch (err) {
+      let errToThrow = await this.__checkError('__clickTrashIcon', err);
+      throw errToThrow;
     }
   }
 
@@ -410,8 +463,8 @@ class AutoModel {
       let actions = this.driver.actions();
       await actions.mouseMove(squares[idx_randomSquare]).click().perform();
     } catch (err) {
-      console.log('err occurred: ' + i);
-      throw err;
+      let errToThrow = await this.__checkError('__clickRandomWhiteSquare', err);
+      throw errToThrow;
     }
   }
 
@@ -423,7 +476,8 @@ class AutoModel {
       let idx_road = 8;
       await areaOptions[idx_road].click();
     } catch (err) {
-      throw err;
+      let errToThrow = await this.__checkError('__selectArea', err);
+      throw errToThrow;
     }
   }
 
@@ -435,7 +489,42 @@ class AutoModel {
       await this.driver.wait(until.elementLocated(By.id(id_btn_dirtyImageSelection)), timeout).sendKeys(imageSet.dirty.path);
       await this.driver.wait(until.elementLocated(By.id(id_btn_cleanImageSelection)), timeout).sendKeys(imageSet.clean.path);
     } catch (err) {
-      throw err;
+      let errToThrow = await this.__checkError('__uplaodImageSet', err);
+      throw errToThrow;
+    }
+  }
+
+  async __clickJournalPublishbutton() {
+    let timeout = 5000;
+    try {
+      let id_btn_journalPublish = 'cphMain_btnPost';
+      await this.driver.wait(until.elementLocated(By.id(id_btn_journalPublish)), timeout).click();
+      /* let alert = await this.driver.wait(until.alertIsPresent(), timeout);
+      await alert.accept(); */
+      await this.__acceptAlertAndGetText();
+    } catch (err) {
+      let errToThrow = await this.__checkError('__clickJournalPublishbutton', err);
+      throw errToThrow;
+    }
+  }
+
+  async __checkPublishStatus() {
+    let timeout = 5000;
+    let errToThrow;
+    try {
+      // To check whether the journal is succesfully published
+      /* let finalAlert = await this.driver.wait(until.alertIsPresent(), timeout);
+      let message = await finalAlert.getText();
+      await finalAlert.accept(); */
+      let alertMessage = await this.__acceptAlertAndGetText();
+      if (!alertMessage.includes('已經發表成功')) {
+        errToThrow = await this.__checkError('__checkPublishStatus', err);
+        errToThrow.type = this.ERROR_TYPES.UNEXPECTED_ALERT;
+        throw errToThrow;
+      }
+    } catch (err) {
+      errToThrow = await this.__checkError('__checkPublishStatus', err);
+      throw errToThrow;
     }
   }
 
@@ -493,6 +582,33 @@ class AutoModel {
           break;
         }
       }
+    }
+  }
+
+  async __checkError(functionName, err) {
+    let errToThrow = {errOrigin: functionName, type: this.ERROR_TYPES.TIMEOUT, originType: err};
+    if (err instanceof SeleniumError.UnexpectedAlertOpenError) {
+      errToThrow.type = this.ERROR_TYPES.UNEXPECTED_ALERT;
+      let alert = await this.driver.switchTo().alert();
+      let alertMessage = await alert.getText();
+      await alert.accept();
+      let typoString = '很抱歉，您輸入的帳號無法登入，可能原因為帳號輸入錯誤';
+      if (alertMessage.includes(typoString)) {
+        errToThrow.type = this.ERROR_TYPES.WRONG_ID_PASSWD;
+      }
+    }
+    return errToThrow;
+  }
+
+  async __acceptAlertAndGetText() {
+    let timeout = 5000;
+    try {
+      let alert = await this.driver.wait(until.alertIsPresent(), timeout);
+      let alertMessage = await alert.getText();
+      await alert.accept();
+      return alertMessage;
+    } catch (err) {
+      throw err;
     }
   }
 }

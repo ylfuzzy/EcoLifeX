@@ -85,14 +85,19 @@ async function autoProcess() {
   }
   let isForCleanUp = true;
   if (imgSetsForInspect.length !== 0 || imgSetsForCleanUp.length !== 0) {
-    let autoModel = new AutoModel();
-    await autoModel.login();
-    //await autoModel.renewRoute(isForCleanUp);
-    for (let i = 0; i < imgSetsForInspect.length; i++) {
-      await autoModel.publishJournal(imgSetsForInspect[i], !isForCleanUp);
-    }
-    for (let i = 0; i < imgSetsForCleanUp.length; i++) {
-      await autoModel.publishJournal(imgSetsForCleanUp[i], isForCleanUp);
+    try {
+      let autoModel = new AutoModel();
+      await autoModel.login();
+      //await autoModel.renewRoute(isForCleanUp);
+      for (let i = 0; i < imgSetsForInspect.length; i++) {
+        await autoModel.publishJournal(imgSetsForInspect[i], !isForCleanUp);
+      }
+      for (let i = 0; i < imgSetsForCleanUp.length; i++) {
+        await autoModel.publishJournal(imgSetsForCleanUp[i], isForCleanUp);
+      }
+    } catch (err) {
+      console.log('main catched!');
+      console.log(err);
     }
   } else {
     console.log('There is no image set can be uploaded');
