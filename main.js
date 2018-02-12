@@ -17,6 +17,7 @@ const MAIN_REPLY = {
 
 let mainWindow;
 let imagesContainer = new ImagesContainer();
+let settingOptions = {needsDateChanging: true, needsCompressing: true};
 
 // Listen for app to be ready
 app.on('ready', function() {
@@ -32,16 +33,22 @@ app.on('ready', function() {
 
 ipcMain.on(RENDERER_REQ.ADD_IMG, function(e, packet) {
   (async function() {
-    let imgInfo = await getImageValidity(packet);
+    //ImagesProcessor.compressImage(packet.imgPath);
     let replyType;
-    if (imgInfo.isValid) {
-      packet.dateTimeOriginal = imgInfo.dateTimeOriginal;
+    if (!settingOptions.needsDateChanging) {
+      let imgInfo = await getImageValidity(packet);
+      if (imgInfo.isValid) {
+        packet.dateTimeOriginal = imgInfo.dateTimeOriginal;
+        replyType = MAIN_REPLY.ADD_IMG.ACCEPTED;
+        updateImagesContainer(replyType, packet);
+      } else {
+        console.log(imgInfo.error);
+        packet.rejectedReason = imgInfo.error;
+        replyType = MAIN_REPLY.ADD_IMG.REJECTED;
+      }
+    } else {
       replyType = MAIN_REPLY.ADD_IMG.ACCEPTED;
       updateImagesContainer(replyType, packet);
-    } else {
-      console.log(imgInfo.error);
-      packet.deniedError = imgInfo.error;
-      replyType = MAIN_REPLY.ADD_IMG.REJECTED;
     }
     replyRendererReq(replyType, packet);
   })();
@@ -77,16 +84,27 @@ async function autoProcess() {
   let imgSetsForCleanUp = [];
   for (tr_n in imagesContainer.tab_inspect) {
     if (imagesContainer.tab_inspect[tr_n].isPaired()) {
+      //await ImagesProcessor.modifyImageSet(imagesContainer.tab_inspect[tr_n], settingOptions);
+      await imagesContainer.tab_inspect[tr_n].modify(settingOptions);
       imgSetsForInspect.push(imagesContainer.tab_inspect[tr_n]);
     }
     if (imagesContainer.tab_clean_up[tr_n].isPaired()) {
+      //await ImagesProcessor.modifyImageSet(imagesContainer.tab_inspect[tr_n], settingOptions);
+      await imagesContainer.tab_clean_up[tr_n].modify(settingOptions);
       imgSetsForCleanUp.push(imagesContainer.tab_clean_up[tr_n]);
     }
   }
-  let isForCleanUp = true;
+  for (let i = 0; i < imgSetsForInspect.length; i++) {
+    console.log(imgSetsForInspect[i]);
+  }
+  for (let i = 0; i < imgSetsForCleanUp.length; i++) {
+    console.log(imgSetsForCleanUp[i]);
+  }
+  /* let isForCleanUp = true;
   if (imgSetsForInspect.length !== 0 || imgSetsForCleanUp.length !== 0) {
     try {
       let autoModel = new AutoModel();
+      //await autoModel.headlessTest();
       await autoModel.login();
       //await autoModel.renewRoute(isForCleanUp);
       for (let i = 0; i < imgSetsForInspect.length; i++) {
@@ -95,13 +113,16 @@ async function autoProcess() {
       for (let i = 0; i < imgSetsForCleanUp.length; i++) {
         await autoModel.publishJournal(imgSetsForCleanUp[i], isForCleanUp);
       }
+      console.log('============ Finished ============');
     } catch (err) {
-      console.log('main catched!');
-      console.log(err);
+      console.log('============ MAIN CATCHED! ============');
+      console.log('Stage: ' + err.stage);
+      console.log('Origin: ' + err.errOrigin);
+      console.log('Type: ' + err.type);
     }
   } else {
     console.log('There is no image set can be uploaded');
-  }
+  } */
 }
 
 function updateImagesContainer(replyType, packet) {
@@ -118,14 +139,20 @@ function updateImagesContainer(replyType, packet) {
 }
 
 function sendBase64(packet) {
-  let imgWidth = undefined;
-  let imgHeight = 300;
-  sharp(packet.imgPath)
-  .resize(imgWidth, imgHeight)
-  .toBuffer(function(err, imgBuffer) {
-    packet.imgBase64 = 'data:image/jpeg;base64,' + imgBuffer.toString('base64');
-    mainWindow.webContents.send(MAIN_REPLY.ADD_IMG.ACCEPTED, packet);
-  });
+  (async function() {
+    let replyType;
+    let withBase64Header = true;
+    let imgBase64 = await ImagesProcessor.getBase64(packet.imgPath, withBase64Header);
+    if (typeof imgBase64 !== 'undefined') {
+      packet.imgBase64 = imgBase64;
+      replyType = MAIN_REPLY.ADD_IMG.ACCEPTED;
+    } else {
+      imagesContainer.deleteImage(packet);
+      packet.rejectedReason = 'Unable to generate base64';
+      replyType = MAIN_REPLY.ADD_IMG.REJECTED;
+    }
+    mainWindow.webContents.send(replyType, packet);
+  })();
 }
 
 function replyRendererReq(replyType, packet) {

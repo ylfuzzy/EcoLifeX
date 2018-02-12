@@ -5,8 +5,11 @@ const chrome = require('selenium-webdriver/chrome');
 const path = __base + 'js/model/chromedriver';
 const service = new chrome.ServiceBuilder(path).build();
 chrome.setDefaultService(service);
-//const fs = require('fs');
-
+/* const options = new chrome.Options().headless();
+options.windowSize({width: 1270, height: 720});
+const fs = require('fs'); */
+/* const chromeCapabilities = Capabilities.chrome();
+chromeCapabilities.set('chromeOptions', {args: ['start-maximized']}); */
 /* const chromeCapabilities = Capabilities.chrome();
 chromeCapabilities.set('chromeOptions', {args: ['disable-gpu', 'headless', 'window-size=1280,720']}); */
 
@@ -28,11 +31,20 @@ class AutoModel {
   async headlessTest() {
     try {
       // Navigate to google.com, enter a search.
-    await this.driver.get('https://www.google.com/');
-    /* await this.driver.findElement({name: 'q'}).sendKeys('webdriver');
-    await this.driver.findElement({name: 'btnG'}).click();
-    await this.driver.wait(webdriver.until.titleIs('webdriver - Google Search'), 1000); */
+    /* await this.driver.get('https://bartzutow.xyz/');
+    let windowHandles = await this.driver.getAllWindowHandles();
+    console.log(windowHandles.length);
+    await this.driver.switchTo().window(windowHandles[0]);
+    await this.driver.findElement({id: 'user'}).sendKeys('ylfuzzy');
+    await this.driver.findElement({id: 'password'}).sendKeys('babababa');
+    //await this.driver.wait(until.titleIs('webdriver - Google 搜尋'), 1000); */
 
+    // Try to loing in headless mode
+    await this.login();
+    let page = 'https://ecolifepanel.epa.gov.tw/journal/clear.aspx';
+    await this.driver.get(page);
+    console.log(await this.driver.getTitle());
+  
     // Take screenshot of results page. Save to disk.
     this.driver.takeScreenshot().then(base64png => {
       fs.writeFileSync('screenshot.png', new Buffer(base64png, 'base64'));
@@ -423,7 +435,7 @@ class AutoModel {
         await this.__clickRandomWhiteSquare();
         await this.__selectArea();
         await this.__uplaodImageSet(imageSet);
-        await this.__clickJournalPublishbutton();
+        await this.__clickJournalPublishButton();
         break;
       } catch (errFromOrigin) {
         console.log(errFromOrigin);
@@ -486,15 +498,15 @@ class AutoModel {
     try {
       let id_btn_dirtyImageSelection = 'cphMain_ucImageUpload_1_fup';
       let id_btn_cleanImageSelection = 'cphMain_ucImageUpload_3_fup';
-      await this.driver.wait(until.elementLocated(By.id(id_btn_dirtyImageSelection)), timeout).sendKeys(imageSet.dirty.path);
-      await this.driver.wait(until.elementLocated(By.id(id_btn_cleanImageSelection)), timeout).sendKeys(imageSet.clean.path);
+      await this.driver.wait(until.elementLocated(By.id(id_btn_dirtyImageSelection)), timeout).sendKeys(imageSet.dirty.uploadingPath);
+      await this.driver.wait(until.elementLocated(By.id(id_btn_cleanImageSelection)), timeout).sendKeys(imageSet.clean.uploadingPath);
     } catch (err) {
       let errToThrow = await this.__checkError('__uplaodImageSet', err);
       throw errToThrow;
     }
   }
 
-  async __clickJournalPublishbutton() {
+  async __clickJournalPublishButton() {
     let timeout = 5000;
     try {
       let id_btn_journalPublish = 'cphMain_btnPost';
@@ -503,7 +515,7 @@ class AutoModel {
       await alert.accept(); */
       await this.__acceptAlertAndGetText();
     } catch (err) {
-      let errToThrow = await this.__checkError('__clickJournalPublishbutton', err);
+      let errToThrow = await this.__checkError('__clickJournalPublishButton', err);
       throw errToThrow;
     }
   }

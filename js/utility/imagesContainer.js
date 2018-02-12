@@ -1,15 +1,36 @@
+const ImagesProcessor = require(__base + 'js/utility/imagesProcessor');
+
 class ImageData {
   constructor() {
-    this.path = undefined;
+    this.previewPath = undefined;
+    this.sourcePath = undefined;
+    this.uploadingPath = undefined;
     this.dateTimeOriginal = undefined;
   }
+
   addData(packet) {
-    this.path = packet.imgPath;
+    this.previewPath = packet.imgPath;
     this.dateTimeOriginal = packet.dateTimeOriginal;
   }
+
   deleteData() {
-    this.path = undefined;
+    this.previewPath = undefined;
     this.dateTimeOriginal = undefined;
+  }
+
+  async modify(settingOptions) {
+    if (this.__previewPathIsNotTheSource()) {
+      await ImagesProcessor.modifyImageData(this, settingOptions);
+    }
+  }
+
+  addModifiedData(sourcePath, uploadingPath) {
+    this.sourcePath = sourcePath;
+    this.uploadingPath = uploadingPath;
+  }
+
+  __previewPathIsNotTheSource() {
+    return (typeof this.previewPath !== 'undefined') && (this.previewPath !== this.sourcePath);
   }
 }
 
@@ -18,8 +39,14 @@ class ImageSet {
     this.dirty = new ImageData();
     this.clean = new ImageData();
   }
+
   isPaired() {
-    return (typeof this.dirty.path !== 'undefined' && typeof this.clean.path !== 'undefined');
+    return (typeof this.dirty.previewPath !== 'undefined' && typeof this.clean.previewPath !== 'undefined');
+  }
+
+  async modify(settingOptions) {
+    await this.dirty.modify(settingOptions);
+    await this.clean.modify(settingOptions);
   }
 }
 

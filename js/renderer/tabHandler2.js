@@ -65,7 +65,7 @@ ipcRenderer.on(MAIN_REPLY.ADD_IMG.ACCEPTED, function(e, packet) {
 
 // callback when main rejected a image
 ipcRenderer.on(MAIN_REPLY.ADD_IMG.REJECTED, function(e, packet) {
-  console.log(packet.deniedError);
+  console.log(packet.rejectedReason);
 });
 
 ipcRenderer.on(MAIN_REPLY.DEL_IMG, function(e, packet) {
