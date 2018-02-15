@@ -58,7 +58,7 @@ class ImagesProcessor {
     }
   }
 
-  /* static async modifyImages(imageSet, settingOptions) {
+  /* static async modifyImages(imageSet, options) {
     let zeroth = {};
     let exif = {};
     let gps = {};
@@ -76,13 +76,13 @@ class ImagesProcessor {
     let imgWidth = undefined;
     let imgHeight = 300;
     try {
-      if (settingOptins.needsDateChanging && settingOptions.needsCompressing) {
+      if (settingOptins.dateChanging && options.compressing) {
         // Deal with dirty image
         let compressedJpgData = await sharp(imageSet.dirty.path).resize(imgWidth, imgHeight).jpeg().withMetadata().toBuffer();
         let exifbytes = piexif.dump(exifObj);
         let newData = piexif.insert(exifbytes, compressedJpgData.toString('binary'));
         let newJpg = new Buffer(newData, 'binary');
-        let outputPath = modifiedImgsFolderPath + settingOptions.modifiedImgsName.dirty;
+        let outputPath = modifiedImgsFolderPath + options.modifiedImgsName.dirty;
         fs.writeFileSync(outputPath, newJpg);
 
         // After writing file to the path, we need to update the pathToUpload & sourcePath in the imageData
@@ -93,18 +93,44 @@ class ImagesProcessor {
     }
   } */
 
-  static async modifyImageData(imageData, settingOptions) {
+  /* static async modifyImageData(imageData, options) {
+    // default paths
+    let sourcePath = imageData.previewPath;
+    let uploadingPath = imageData.previewPath;
     try {
-      if (settingOptions.needsDateChanging && settingOptions.needsCompressing) {
+      if (options.dateChanging && options.compressing) {
         // Deal with dirty image
         let compressedJpgBinary = await this.__getCompressedJpgData(imageData.previewPath, 'binary');
         let dateChangedJpgBinary = this.__getDateChangedJpgBinary(compressedJpgBinary);
         let imgName = new Date().getTime().toString() + '.jpg';
         let outputPath = this.__writeJpgToModifiedImgsFolder(imgName, dateChangedJpgBinary);
         if (fs.existsSync(outputPath)) {
-          imageData.addModifiedData(imageData.previewPath, outputPath);
+          //imageData.addModifiedData(imageData.previewPath, outputPath);
+          uploadingPath = outputPath;
         }
       }
+      imageData.addModifiedData(sourcePath, uploadingPath);
+    } catch (err) {
+      console.log(err);
+    }
+  } */
+
+  static async modifyImageData(imageData, options) {
+    // default paths
+    let uploadingPath = imageData.previewPath;
+    try {
+      if (options.dateChanging && options.compressing) {
+        // Deal with dirty image
+        let compressedJpgBinary = await this.__getCompressedJpgData(imageData.previewPath, 'binary');
+        let dateChangedJpgBinary = this.__getDateChangedJpgBinary(compressedJpgBinary);
+        let imgName = new Date().getTime().toString() + '.jpg';
+        let outputPath = this.__writeJpgToModifiedImgsFolder(imgName, dateChangedJpgBinary);
+        if (fs.existsSync(outputPath)) {
+          //imageData.addModifiedData(imageData.previewPath, outputPath);
+          uploadingPath = outputPath;
+        }
+      }
+      imageData.uploadingPath = uploadingPath;
     } catch (err) {
       console.log(err);
     }

@@ -7,7 +7,8 @@ const sharp = require('sharp');
 const AutoModel = require(__base + 'js/model/autoModel');
 const ImagesContainer = require(__base + 'js/utility/imagesContainer');
 const ImagesProcessor = require(__base + 'js/utility/imagesProcessor');
-const RENDERER_REQ = {ADD_IMG: 'REQ:ADD_IMG', DEL_IMG: 'REQ:DEL_IMG', GO: 'REQ:GO'};
+const RENDERER_REQ = {ADD_IMG: 'REQ:ADD_IMG', DEL_IMG: 'REQ:DEL_IMG', GO: 'REQ:GO',
+  CHANGE_OPTION: 'REQ:CHANGE_OPTION'};
 const MAIN_REPLY = {
   ADD_IMG: {
     ACCEPTED: 'REPLY:ADD_IMG:ACCEPTED',
@@ -17,8 +18,7 @@ const MAIN_REPLY = {
 
 let mainWindow;
 let imagesContainer = new ImagesContainer();
-let settingOptions = {needsDateChanging: true, needsCompressing: true};
-
+let options = {dateChanging: false, compressing: false};
 // Listen for app to be ready
 app.on('ready', function() {
   // Create new window
@@ -31,11 +31,15 @@ app.on('ready', function() {
   }));
 });
 
+app.on('quit', function() {
+  console.log('app quits');
+});
+
 ipcMain.on(RENDERER_REQ.ADD_IMG, function(e, packet) {
   (async function() {
     //ImagesProcessor.compressImage(packet.imgPath);
     let replyType;
-    if (!settingOptions.needsDateChanging) {
+    if (!options.dateChanging) {
       let imgInfo = await getImageValidity(packet);
       if (imgInfo.isValid) {
         packet.dateTimeOriginal = imgInfo.dateTimeOriginal;
@@ -65,6 +69,23 @@ ipcMain.on(RENDERER_REQ.GO, function(e) {
   autoProcess();
 });
 
+ipcMain.on(RENDERER_REQ.CHANGE_OPTION, function(e, packet) {
+  switch (packet.option) {
+    case 'compressing':
+      options.compressing = packet.settingValue;
+      break;
+    case 'date_changing':
+      options.dateChanging = packet.settingValue;
+      break;
+  }
+  console.log(options);
+});
+
+/* ipcMain.on(RENDERER_REQ.OPTIONS.DATE_CHANGING, function(e, needsDateChanging) {
+  options.needsDateChanging = needsDateChanging;
+  console.log(options);
+}); */
+
 async function getImageValidity(packet) {
   let newImgPath = packet.imgPath;
   let comparedImgType = (packet.imgType === 'dirty') ? 'clean' : 'dirty';
@@ -84,13 +105,13 @@ async function autoProcess() {
   let imgSetsForCleanUp = [];
   for (tr_n in imagesContainer.tab_inspect) {
     if (imagesContainer.tab_inspect[tr_n].isPaired()) {
-      //await ImagesProcessor.modifyImageSet(imagesContainer.tab_inspect[tr_n], settingOptions);
-      await imagesContainer.tab_inspect[tr_n].modify(settingOptions);
+      //await ImagesProcessor.modifyImageSet(imagesContainer.tab_inspect[tr_n], options);
+      await imagesContainer.tab_inspect[tr_n].modify(options);
       imgSetsForInspect.push(imagesContainer.tab_inspect[tr_n]);
     }
     if (imagesContainer.tab_clean_up[tr_n].isPaired()) {
-      //await ImagesProcessor.modifyImageSet(imagesContainer.tab_inspect[tr_n], settingOptions);
-      await imagesContainer.tab_clean_up[tr_n].modify(settingOptions);
+      //await ImagesProcessor.modifyImageSet(imagesContainer.tab_inspect[tr_n], options);
+      await imagesContainer.tab_clean_up[tr_n].modify(options);
       imgSetsForCleanUp.push(imagesContainer.tab_clean_up[tr_n]);
     }
   }

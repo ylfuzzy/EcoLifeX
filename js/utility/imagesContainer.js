@@ -3,7 +3,6 @@ const ImagesProcessor = require(__base + 'js/utility/imagesProcessor');
 class ImageData {
   constructor() {
     this.previewPath = undefined;
-    this.sourcePath = undefined;
     this.uploadingPath = undefined;
     this.dateTimeOriginal = undefined;
   }
@@ -18,20 +17,30 @@ class ImageData {
     this.dateTimeOriginal = undefined;
   }
 
-  async modify(settingOptions) {
-    if (this.__previewPathIsNotTheSource()) {
-      await ImagesProcessor.modifyImageData(this, settingOptions);
-    }
+  async modify(options) {
+    await ImagesProcessor.modifyImageData(this, options);
   }
 
-  addModifiedData(sourcePath, uploadingPath) {
+  /* async modify(options) {
+    if (this.__needsToModify(options)) {
+      await ImagesProcessor.modifyImageData(this, options);
+    } else {
+      console.log('Does not need to modify!');
+    }
+  } */
+
+  /* addModifiedData(sourcePath, uploadingPath) {
     this.sourcePath = sourcePath;
     this.uploadingPath = uploadingPath;
-  }
+  } */
 
-  __previewPathIsNotTheSource() {
-    return (typeof this.previewPath !== 'undefined') && (this.previewPath !== this.sourcePath);
-  }
+  /* __needsToModify(options) {
+    let previewHasChanged = this.previewPath !== this.sourcePath;
+    let optionsHaveChanged = (options.needsDateChanging !== options.lastOptions.needsDateChanging)
+      || (options.needsCompressing !== options.lastOptions.needsCompressing);
+
+    return previewHasChanged || optionsHaveChanged;
+  } */
 }
 
 class ImageSet {
@@ -44,9 +53,9 @@ class ImageSet {
     return (typeof this.dirty.previewPath !== 'undefined' && typeof this.clean.previewPath !== 'undefined');
   }
 
-  async modify(settingOptions) {
-    await this.dirty.modify(settingOptions);
-    await this.clean.modify(settingOptions);
+  async modify(options) {
+    await this.dirty.modify(options);
+    await this.clean.modify(options);
   }
 }
 

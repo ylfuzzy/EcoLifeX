@@ -58,6 +58,21 @@ $('.css_td').on('contextmenu', '.preview', function() {
   ipcRenderer.send(RENDERER_REQ.DEL_IMG, packet);
 });
 
+// Change setting values
+$(':checkbox').on('change', function() {
+  let option = $(this).attr('id');
+  let settingValue = $(this).prop('checked');
+  let packet = {};
+  packet.option = option;
+  packet.settingValue = settingValue;
+  ipcRenderer.send(RENDERER_REQ.CHANGE_OPTION, packet);
+});
+
+/* $('#date_changing').on('change', function() {
+  let needsDateChanging = $(this).prop('checked');
+  ipcRenderer.send(RENDERER_REQ.OPTIONS.DATE_CHANGING, needsDateChanging);
+}); */
+
 // callback when main accepted a image
 ipcRenderer.on(MAIN_REPLY.ADD_IMG.ACCEPTED, function(e, packet) {
   updateHtml(packet, MAIN_REPLY.ADD_IMG.ACCEPTED);
