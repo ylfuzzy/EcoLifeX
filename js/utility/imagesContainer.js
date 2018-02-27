@@ -1,29 +1,41 @@
 const ImagesProcessor = require(__base + 'js/utility/imagesProcessor');
 
 class ImageData {
-  constructor() {
+  /* constructor() {
     this.previewPath = undefined;
+    this.uploadingPath = undefined;
+    this.dateTimeOriginal = undefined;
+  } */
+
+  constructor() {
+    this.sourcePath = undefined;
     this.uploadingPath = undefined;
     this.dateTimeOriginal = undefined;
   }
 
-  addData(packet) {
-    this.previewPath = packet.imgPath;
+  addSourceData(packet) {
+    this.sourcePath = packet.imgPath;
+    this.dateTimeOriginal = packet.dateTimeOriginal;
+  }
+
+  addUploadingData(packet) {
+    this.uploadingPath = packet.imgPath;
     this.dateTimeOriginal = packet.dateTimeOriginal;
   }
 
   deleteData() {
-    this.previewPath = undefined;
+    this.sourcePath = undefined;
+    this.uploadingPath = undefined;
     this.dateTimeOriginal = undefined;
   }
 
-  async modify(options) {
-    await ImagesProcessor.modifyImageData(this, options);
+  async modify(setting) {
+    await ImagesProcessor.modifyImageData(this, setting);
   }
 
-  /* async modify(options) {
-    if (this.__needsToModify(options)) {
-      await ImagesProcessor.modifyImageData(this, options);
+  /* async modify(setting) {
+    if (this.__needsToModify(setting)) {
+      await ImagesProcessor.modifyImageData(this, setting);
     } else {
       console.log('Does not need to modify!');
     }
@@ -34,12 +46,12 @@ class ImageData {
     this.uploadingPath = uploadingPath;
   } */
 
-  /* __needsToModify(options) {
+  /* __needsToModify(setting) {
     let previewHasChanged = this.previewPath !== this.sourcePath;
-    let optionsHaveChanged = (options.needsDateChanging !== options.lastOptions.needsDateChanging)
-      || (options.needsCompressing !== options.lastOptions.needsCompressing);
+    let settingHaveChanged = (setting.needsDateChanging !== setting.lastOptions.needsDateChanging)
+      || (setting.needsCompressing !== setting.lastOptions.needsCompressing);
 
-    return previewHasChanged || optionsHaveChanged;
+    return previewHasChanged || settingHaveChanged;
   } */
 }
 
@@ -50,12 +62,12 @@ class ImageSet {
   }
 
   isPaired() {
-    return (typeof this.dirty.previewPath !== 'undefined' && typeof this.clean.previewPath !== 'undefined');
+    return (typeof this.dirty.sourcePath !== 'undefined' && typeof this.clean.sourcePath !== 'undefined');
   }
 
-  async modify(options) {
-    await this.dirty.modify(options);
-    await this.clean.modify(options);
+  async modify(setting) {
+    await this.dirty.modify(setting);
+    await this.clean.modify(setting);
   }
 }
 
@@ -69,8 +81,8 @@ class ImagesContainer {
     };
   }
 
-  addImage(packet) {
-    this[packet.tabID][packet.tr_n][packet.imgType].addData(packet);
+  addSourceImage(packet) {
+    this[packet.tabID][packet.tr_n][packet.imgType].addSourceData(packet);
   }
 
   deleteImage(packet) {

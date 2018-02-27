@@ -9,7 +9,7 @@
               <h5>壓縮照片</h5>
               <label>
                 Off
-                <input type="checkbox" id="switch_compress">
+                <input type="checkbox" class="setting" id="compressing">
                 <span class="lever"></span>
                 On
               </label>
@@ -21,10 +21,20 @@
             <div class="switch">
               <label>
                 Off
-                <input type="checkbox">
+                <input type="checkbox" class="setting" id="date_changing">
                 <span class="lever"></span>
                 On
               </label>
+            </div>
+            <div class="row" id="container_pickers">
+              <div class="col s6">
+                <label for="id_datepicker">日期</label>
+                <input type="text" class="datepicker" id='id_datepicker'>
+              </div>
+              <div class="col s6">
+                <label for="id_timepicker">時間</label>
+                <input type="text" class="timepicker" id='id_timepicker'>
+              </div>
             </div>
           </div>
           <div class="divider"></div>

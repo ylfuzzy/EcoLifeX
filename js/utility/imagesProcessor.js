@@ -5,30 +5,49 @@ const fs = require('fs');
 const MODIFIED_IMGS_FOLDER_PATH = __base + 'modifiedImgs/';
 
 class ImagesProcessor {
-  static async isValidImage(newImgPath, comparedImgDateTimeOriginal) {
+  static async isValidImage(comparedInfo) {
     let imgInfo = {isValid: true, dateTimeOriginal: undefined, error: undefined};
     try {
-      // read new image's exif
-      let newImgExif = await fastExif.read(newImgPath);
+      if (await this.__isValidFormat(comparedInfo.newImgPath, 'jpeg') || await this.__isValidFormat(comparedInfo.newImgPath, 'png')) {
+        if (!comparedInfo.dateChanging) {
+          // read new image's exif
+          console.log('asdfsdfsfs');
+          let newImgExif = await fastExif.read(comparedInfo.newImgPath);
 
-      // Check whether this new image's exif exists DateTimeOrigianl
-      // If it does not exist, the line below will throw a error
-      newImgExif.exif.DateTimeOriginal.getTime();
-      imgInfo.dateTimeOriginal = newImgExif.exif.DateTimeOriginal;
-
-      if (typeof comparedImgDateTimeOriginal !== 'undefined') {
-        let onTheSameDay = await this.__areOnTheSameDay(imgInfo.dateTimeOriginal, comparedImgDateTimeOriginal);
-        if (!onTheSameDay) {
-          imgInfo.isValid = false;
-          imgInfo.error = 'are not on the same day';
+          // Check whether this new image's exif exists DateTimeOrigianl
+          // If it does not exist, the line below will throw a error
+          newImgExif.exif.DateTimeOriginal.getTime();
+          imgInfo.dateTimeOriginal = newImgExif.exif.DateTimeOriginal;
+          if (typeof comparedInfo.comparedImgDateTimeOriginal !== 'undefined') {
+            console.log('aaaaaaaaaaaaaaaa');
+            let onTheSameDay = await this.__areOnTheSameDay(imgInfo.dateTimeOriginal, comparedInfo.comparedImgDateTimeOriginal);
+            if (!onTheSameDay) {
+              imgInfo.isValid = false;
+              let chineseImgType = comparedInfo.comparedImgType === 'dirty' ? '有垃圾' : '沒垃圾';
+              imgInfo.error = '照片日期與「' + chineseImgType + '」的照片不同';
+            }
+          }
         }
+      } else {
+        imgInfo.isValid = false;
+        imgInfo.error = '只接受.jpg, .png的照片格式';
       }
     } catch (err) {
       console.log(err);
       imgInfo.isValid = false;
-      imgInfo.error = 'cannot read DateTimeOriginal';
+      imgInfo.error = '日期資訊不存在';
     } finally {
       return imgInfo;
+    }
+  }
+
+  static async __isValidFormat(imgPath, imgFormat) {
+    try {
+      let metadata = await sharp(imgPath).metadata();
+      return metadata.format === imgFormat;
+    } catch (err) {
+      console.log('is not ' + imgFormat);
+      return false;
     }
   }
 
@@ -58,97 +77,57 @@ class ImagesProcessor {
     }
   }
 
-  /* static async modifyImages(imageSet, options) {
-    let zeroth = {};
-    let exif = {};
-    let gps = {};
-    zeroth[piexif.ImageIFD.Make] = 'Make';
-    zeroth[piexif.ImageIFD.XResolution] = [777, 1];
-    zeroth[piexif.ImageIFD.YResolution] = [777, 1];
-    zeroth[piexif.ImageIFD.Software] = 'SONY';
-    exif[piexif.ExifIFD.DateTimeOriginal] = this.__getModifiedTime();//'2018:02:09 10:10:00';
-    exif[piexif.ExifIFD.LensMake] = 'SONY';
-    exif[piexif.ExifIFD.Sharpness] = 777;
-    exif[piexif.ExifIFD.LensSpecification] = [[1, 1], [1, 1], [1, 1], [1, 1]];
-    gps[piexif.GPSIFD.GPSVersionID] = [7, 7, 7, 7];
-    gps[piexif.GPSIFD.GPSDateStamp] = '1999:99:99 99:99:99';
-    let exifObj = {'0th':zeroth, 'Exif':exif, 'GPS':gps};
-    let imgWidth = undefined;
-    let imgHeight = 300;
-    try {
-      if (settingOptins.dateChanging && options.compressing) {
-        // Deal with dirty image
-        let compressedJpgData = await sharp(imageSet.dirty.path).resize(imgWidth, imgHeight).jpeg().withMetadata().toBuffer();
-        let exifbytes = piexif.dump(exifObj);
-        let newData = piexif.insert(exifbytes, compressedJpgData.toString('binary'));
-        let newJpg = new Buffer(newData, 'binary');
-        let outputPath = modifiedImgsFolderPath + options.modifiedImgsName.dirty;
-        fs.writeFileSync(outputPath, newJpg);
-
-        // After writing file to the path, we need to update the pathToUpload & sourcePath in the imageData
-
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  } */
-
-  /* static async modifyImageData(imageData, options) {
+  static async modifyImageData(imageData, setting) {
     // default paths
-    let sourcePath = imageData.previewPath;
-    let uploadingPath = imageData.previewPath;
+    let uploadingPath = imageData.sourcePath;
+    let dateTimeOriginal = imageData.dateTimeOriginal;
     try {
-      if (options.dateChanging && options.compressing) {
-        // Deal with dirty image
-        let compressedJpgBinary = await this.__getCompressedJpgData(imageData.previewPath, 'binary');
-        let dateChangedJpgBinary = this.__getDateChangedJpgBinary(compressedJpgBinary);
+      if (setting.compressing || setting.dateChanging) {
+        let jpgBinary = await this.__getModifiedJpgBinary(imageData.sourcePath, setting);
         let imgName = new Date().getTime().toString() + '.jpg';
-        let outputPath = this.__writeJpgToModifiedImgsFolder(imgName, dateChangedJpgBinary);
+        let outputPath = this.__writeJpgToModifiedImgsFolder(imgName, jpgBinary);
         if (fs.existsSync(outputPath)) {
-          //imageData.addModifiedData(imageData.previewPath, outputPath);
+          console.log('heeeeeeee');
           uploadingPath = outputPath;
+          let newImgExif = await fastExif.read(uploadingPath);
+          console.log(newImgExif);
+          dateTimeOriginal = newImgExif.exif.DateTimeOriginal; 
         }
       }
-      imageData.addModifiedData(sourcePath, uploadingPath);
+      let packet = {imgPath: uploadingPath, dateTimeOriginal: dateTimeOriginal};
+      imageData.addUploadingData(packet);
     } catch (err) {
-      console.log(err);
-    }
-  } */
-
-  static async modifyImageData(imageData, options) {
-    // default paths
-    let uploadingPath = imageData.previewPath;
-    try {
-      if (options.dateChanging && options.compressing) {
-        // Deal with dirty image
-        let compressedJpgBinary = await this.__getCompressedJpgData(imageData.previewPath, 'binary');
-        let dateChangedJpgBinary = this.__getDateChangedJpgBinary(compressedJpgBinary);
-        let imgName = new Date().getTime().toString() + '.jpg';
-        let outputPath = this.__writeJpgToModifiedImgsFolder(imgName, dateChangedJpgBinary);
-        if (fs.existsSync(outputPath)) {
-          //imageData.addModifiedData(imageData.previewPath, outputPath);
-          uploadingPath = outputPath;
-        }
-      }
-      imageData.uploadingPath = uploadingPath;
-    } catch (err) {
+      console.log('heeeeeeeeeeelooooooooooo');
       console.log(err);
     }
   }
 
-  static async __getCompressedJpgData(imgPath, type) {
-    let imgWidth = undefined;
-    let imgHeight = 300;
+  static async __getModifiedJpgBinary(imgPath, setting) {
     try {
-      let compressedJpgData = await sharp(imgPath).resize(imgWidth, imgHeight).jpeg().withMetadata().toBuffer();
-      return compressedJpgData.toString(type);
+      let jpgData;
+      let jpgBinary;
+      if (setting.compressing || await this.__isValidFormat(imgPath, 'png')) {
+        let imgWidth = undefined;
+        let imgHeight = 300;
+        jpgData = await sharp(imgPath).withMetadata().resize(imgWidth, imgHeight).jpeg().toBuffer();
+        console.log('compressing');
+      } else {
+        jpgData = fs.readFileSync(imgPath);
+      }
+      if (setting.dateChanging) {
+        jpgBinary = this.__getDateChangedJpgBinary(jpgData.toString('binary'), setting.pickedDate);
+      } else {
+        jpgBinary = jpgData;
+        console.log('no dateChanging');
+      }
+      return jpgBinary;
     } catch (err) {
       throw err;
     }
   }
 
-  static __getDateChangedJpgBinary(jpgBinary) {
-    let formatedTime = this.__getModifiedTime();
+  static __getDateChangedJpgBinary(jpgBinary, pickedDate) {
+    let formatedTime = this.__getFormatedTime(pickedDate);
     let zeroth = {};
     let exif = {};
     let gps = {};
@@ -184,12 +163,12 @@ class ImagesProcessor {
     }
   }
 
-  static __getModifiedTime() {
+  static __getFormatedTime(pickedDate) {
+    console.log('formated: ' + typeof pickedDate);
     let timeShift = 8 * 60 * 60 * 1000;
-    let currentTime = new Date(new Date().getTime() + timeShift);
-    let formatedTime = currentTime.getUTCFullYear().toString() + ':';
-    let dateInfo = [currentTime.getUTCMonth()+1, currentTime.getUTCDate(),
-                      currentTime.getUTCHours(), currentTime.getUTCMinutes(), currentTime.getUTCSeconds()];
+    let formatedTime = pickedDate.getUTCFullYear().toString() + ':';
+    let dateInfo = [pickedDate.getUTCMonth()+1, pickedDate.getUTCDate(),
+                      pickedDate.getUTCHours(), pickedDate.getUTCMinutes(), pickedDate.getUTCSeconds()];
     for (let i = 0; i < dateInfo.length; i++) {
       let formatedStr = (dateInfo[i] < 10) ? '0' + dateInfo[i].toString() : dateInfo[i].toString();
       if (i === 1) {
@@ -270,6 +249,20 @@ class ImagesProcessor {
       }
     }
     return sutableTimeRange;
+  }
+
+  static deleteModifiedImages() {
+    try {
+      let images = fs.readdirSync(MODIFIED_IMGS_FOLDER_PATH);
+      for (let i = 0; i < images.length; i++) {
+        console.log(i);
+        let image = MODIFIED_IMGS_FOLDER_PATH + images[i];
+        console.log(image);
+        fs.unlinkSync(image);
+      }
+    } catch (err) {
+      console.log(err);
+    }
   }
 }
 

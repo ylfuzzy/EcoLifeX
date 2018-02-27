@@ -19,13 +19,12 @@ chromeCapabilities.set('chromeOptions', {args: ['disable-gpu', 'headless', 'wind
   .build(); */
 /* const ERROR_TYPES = {
   WRONG_ID_PASSWD: 'WRONG_ID_PASSWD', UNEXPECTED_ALERT: 'UNEXPECTED_ALERT', TIMEOUT: 'TIMEOUT', UNKNOWN: 'UNKNOWN'}; */
-
+const CURRENT_DATE = new Date(new Date().getTime() + 8 * 60 * 60 * 1000);
 class AutoModel {
   constructor() {
     console.log(path);
     this.driver = new Builder().withCapabilities(Capabilities.chrome()).build();
-    this.ERROR_TYPES = {
-      WRONG_ID_PASSWD: 'WRONG_ID_PASSWD', UNEXPECTED_ALERT: 'UNEXPECTED_ALERT', TIMEOUT: 'TIMEOUT', UNKNOWN: 'UNKNOWN'};
+    this.ERROR_TYPES = {WRONG_ID_PASSWD: 'WRONG_ID_PASSWD', UNEXPECTED_ALERT: 'UNEXPECTED_ALERT', TIMEOUT: 'TIMEOUT', UNKNOWN: 'UNKNOWN'};
   }
 
   async headlessTest() {
@@ -59,16 +58,16 @@ class AutoModel {
   /**
    * The following block is for login
    */
-  async login() {
+  async login(id) {
     let timeout = 5000;
     let trial = 0;
     let maxTrial = 5;
     while (true) {
       try {
         // fill up user id & password
-        let testID = '1002101033';
-        let testPasswd = 'east1002101033';
-        await this.__fillInIDPasswd(testID, testPasswd);
+        //let testID = '1002101052';
+        let testPasswd = 'east' + id;
+        await this.__fillInIDPasswd(id, testPasswd);
 
         // try click "go to admin button"
         await this.__goToAdmin();
@@ -138,36 +137,93 @@ class AutoModel {
    * The following block is for monthly route renew
    */
   async renewRoute(isForCleanUp) {
+    /* let settingPage = 'https://ecolifepanel.epa.gov.tw/map/area.aspx';
+    if (!isForCleanUp) {
+      settingPage += '?tab=1';
+    } */
+    try {
+      // go to setting page
+      /* console.log('Go to setting page');
+      await this.__goToSettingPageHelper(settingPage); */
+      let renewInfo = await this.__checkRoutes(isForCleanUp);
+      if (renewInfo.isRequired) {
+        await this.__fillInRouteSetting(renewInfo.newTitle);
+      }
+      return renewInfo.newTitle;
+    } catch (err) {
+      console.log('============== final catch ==============');
+      console.log(err);
+    }
+  }
+
+  async quiteChrome() {
+    try {
+      await this.driver.quit();
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async __checkRoutes(isForCleanUp) {
     let settingPage = 'https://ecolifepanel.epa.gov.tw/map/area.aspx';
     if (!isForCleanUp) {
       settingPage += '?tab=1';
     }
+    let renewInfo = {isRequired: true, newTitle: undefined};
+    let timeout = 5000;
     let trial = 0;
     let maxTrial = 5;
-    while (trial < maxTrial) {
+    while (true) {
       try {
-        // go to setting page
-        console.log('Go to setting page');
-        await this.__goToSettingPageHelper(settingPage);
-  
-        // fill up new title
-        console.log('Fill up new title');
-        await this.__fillUpTitleHelper(isForCleanUp);
-  
-        // switch user
-        console.log('Try switch user');
-        await this.__switchUserHelper();
-  
-        // click white square png
-        console.log('Try click a square.png');
-        await this.__clickWhiteSquareHelper();
-        break;
+        await this.driver.get(settingPage);
+        let css_listTable = '#cphMain_UPList tr';
+        let listTable = await this.driver.wait(until.elementsLocated(By.css(css_listTable)), timeout);
+        // idx 1 represents first raw at listTable
+        let idx_1stRow = 1;
+        let titleColumn = await listTable[idx_1stRow].findElement(By.css('.cell-title'));
+        let title = await titleColumn.getText();
+        renewInfo.newTitle = await this.__generateTitle(isForCleanUp);
+        console.log('the title should be: ' + renewInfo.newTitle);
+        if (title === renewInfo.newTitle) {
+          renewInfo.isRequired = false;
+          return renewInfo;
+        }
+
+        let btnColumnAt1stRow = await listTable[idx_1stRow].findElements(By.css('.cell-large-actions'));
+        let btns = await btnColumnAt1stRow[0].findElements(By.css('input'));
+
+        // idx 0 represents the "view btn"
+        let idx_btnViewRoute = 0;
+        await btns[idx_btnViewRoute].click();
+        let id_btnEdit = 'cphMain_btnEdit';
+        await this.driver.wait(until.elementLocated(By.id(id_btnEdit)), timeout).click();
+        return renewInfo;
       } catch (err) {
-        console.log('============== final catch ==============');
-        console.log('catch times: ' + trial);
-        console.log(err);
-        trial++;
+        if (trial < maxTrial) {
+          trial++
+        } else {
+          throw err;
+        }
       }
+    }
+  }
+
+  async __generateTitle(isForCleanUp) {
+    let yearROC = (CURRENT_DATE.getUTCFullYear() - 1911).toString();
+    let month = (CURRENT_DATE.getUTCMonth() + 1) < 10 ? '0' + (CURRENT_DATE.getUTCMonth() + 1).toString() : (CURRENT_DATE.getUTCMonth() + 1).toString();
+    let routeName = isForCleanUp ? '清理路線' : '巡檢路線';
+    let timeout = 5000;
+    try {
+      let id_sideBar = 'cphMain_ucSidebar_txtNowBlog';
+      let sideBar = await this.driver.wait(until.elementLocated(By.id(id_sideBar)), timeout);
+      let sideBarFullName = await sideBar.getAttribute('value');
+      let idx_ref = sideBarFullName.indexOf('里');
+      let idx_begin = idx_ref - 2;
+      let idx_end = idx_ref + 1;
+      let villageName = sideBarFullName.substring(idx_begin, idx_end);
+      return yearROC + '/' + month + '月-' + villageName + routeName + 'test'; 
+    } catch (err) {
+      throw err;
     }
   }
 
@@ -195,17 +251,39 @@ class AutoModel {
       }
     }
   }
+
+  async __fillInRouteSetting(newTitle) {
+    let trial = 0;
+    let maxTrial = 5;
+    while (true) {
+      try {
+        if (trial > 0) {
+          await this.driver.navigate().refresh();
+        }
+        await this.__fillInTitleHelper(newTitle);
+        await this.__switchUserHelper();
+        await this.__clickWhiteSquareHelper();
+        break;
+      } catch (err) {
+        if (trial < maxTrial) {
+          trial++;
+        } else {
+          throw err;
+        }
+      }
+    }
+  }
   
-  async __fillUpTitleHelper(isForCleanUp) {
+  async __fillInTitleHelper(newTitle) {
     let timeout = 5000;
     try {
-      let title_inspect = '107/02-崇文里巡檢路線';
+      /* let title_inspect = '107/02-崇文里巡檢路線';
       let title_cleanUp = '107/02-崇文里清理路線';
-      let titleToBeFilled = isForCleanUp ? title_cleanUp : title_inspect;
+      let titleToBeFilled = isForCleanUp ? title_cleanUp : title_inspect; */
       let id_tf_title = 'cphMain_txtAreaName';
       let tf_title = await this.driver.wait(until.elementLocated(By.id(id_tf_title)), timeout);
       await tf_title.clear();
-      await tf_title.sendKeys(titleToBeFilled);
+      await tf_title.sendKeys(newTitle);
     } catch (err) {
       throw err;
     }
@@ -219,14 +297,17 @@ class AutoModel {
       try {
         let squares = await this.__getWhiteSquares();
         // if the number of squares is even, add a point, else delete the last point.
-        console.log('squares length: ' + squares.length);
+        console.log('squares length before click: ' + squares.length);
         let actions = this.driver.actions();
         if (squares.length % 2 === 0) {
           await actions.mouseMove(squares[0], {x: 5, y: 0}).click().perform();
         } else {
           // await squares[squares.length - 1].click();
-          await actions.mouseMove(squares[squares.length - 1]).click().perform();
+          let idx_squareToDelete = await this.__isRoute() ? squares.length - 1 : squares.length - 2;
+          await actions.mouseMove(squares[idx_squareToDelete]).click().perform();
         }
+        let squaresAfterClick = await this.__getWhiteSquares();
+        console.log('squares length after click: ' + squaresAfterClick.length);
         break;
       } catch (err) {
         if (trial < maxTrial) {
@@ -237,6 +318,16 @@ class AutoModel {
           throw err;
         }
       }
+    }
+  }
+
+  async __isRoute() {
+    try {
+      let type = await this.driver.wait(until.elementLocated(By.id('cphMain_labModeType')));
+      let typeStr = await type.getText();
+      return typeStr.includes('路線');
+    } catch (err) {
+      throw err;
     }
   }
 

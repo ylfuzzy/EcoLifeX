@@ -6,7 +6,6 @@ const RENDERER_REQ = {
 const MAIN_REPLY = {
   ADD_IMG: {
       ACCEPTED: 'REPLY:ADD_IMG:ACCEPTED',
-      DENIED: 'REPLY:ADD_IMG:DENIED'
-      },
+      REJECTED: 'REPLY:ADD_IMG:REJECTED'},
   DEL_IMG: 'REPLY:DEL_IMG'
-  };
+};
