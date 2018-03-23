@@ -69,6 +69,79 @@ $('.css_td').on('contextmenu', '.preview', function() {
   ipcRenderer.send(RENDERER_REQ.DEL_IMG, packet);
 });
 
+$('#btn_go').on('click', function() {
+  packet = {id: $('#input_id').val(), password: $('#input_password').val()};
+  console.log('babababababaabababa');
+  ipcRenderer.send(RENDERER_REQ.GO.REQUEST_TO_GO, packet);
+});
+
+/**
+ * Login page funcitons
+ */
+
+$('#input_id').autocomplete({
+  data: {
+    "1002101001 富裕里": null,
+    "1002101003 裕農里": null,
+    "1002101004 大智里": null,
+    "1002101006 崇學里": null,
+    "1002101007 泉南里": null,
+    "1002101010 仁和里": null,
+    "1002101013 後甲里": null,
+    "1002101015 東光里": null,
+    "1002101016 新東里": null,
+    "1002101017 中西里": null,
+    "1002101018 東安里": null,
+    "1002101019 崇明里": null,
+    "1002101020 自強里": null,
+    "1002101021 和平里": null,
+    "1002101022 路東里": null,
+    "1002101023 大德里": null,
+    "1002101025 關聖里": null,
+    "1002101027 衛國里": null,
+    "1002101028 崇善里": null,
+    "1002101029 富強里": null,
+    "1002101030 圍下里": null,
+    "1002101032 小東里": null,
+    "1002101033 大學里": null,
+    "1002101034 龍山里": null,
+    "1002101035 虎尾里": null,
+    "1002101036 德高里": null,
+    "1002101037 莊敬里": null,
+    "1002101038 大福里": null,
+    "1002101039 忠孝里": null,
+    "1002101040 崇誨里": null,
+    "1002101041 東明里": null,
+    "1002101042 崇德里": null,
+    "1002101043 東智里": null,
+    "1002101044 東聖里": null,
+    "1002101045 崇成里": null,
+    "1002101046 東門里": null,
+    "1002101047 成大里": null,
+    "1002101048 大同里": null,
+    "1002101049 德光里": null,
+    "1002101050 崇信里": null,
+    "1002101051 崇文里": null,
+    "1002101052 復興里": null,
+    "1002101053 裕聖里": null,
+    "1002101054 南聖里": null,
+    "1002101055 文聖里": null
+  },
+  //limit: 20, // The max amount of results that can be shown at once. Default: Infinity.
+  onAutocomplete: function(val) {
+    // Callback function when value is autcompleted.
+    let id = val.split(' ')[0];
+    let password = 'east' + id;
+    $('#input_id').val(id);
+    $('#input_password').focus();
+    $('#input_password').val('');
+    $('#input_password').val(password);
+    console.log('id: ' + id);
+    console.log('password: ' + password);
+  },
+  minLength: 1, // The minimum length of the input for the autocomplete to start. Default: 1.
+});
+
 // Change setting values
 /* $(':checkbox').on('change', function() {
   let option = $(this).attr('id');
@@ -107,10 +180,13 @@ $('.setting').on('click', function() {
   if (setting === 'date_changing') {
     let isOn = option;
     let css_displayValue = isOn ? 'block' : 'none';
-    $('#container_pickers').css('display', css_displayValue);
+    //$('#container_pickers').css('display', css_displayValue);
     if (isOn) {
       console.log(getPickedDate());
       packet.pickedDate = getPickedDate();
+      $('#container_pickers').removeClass('hide');
+    } else {
+      $('#container_pickers').addClass('hide');
     }
   }
   ipcRenderer.send(RENDERER_REQ.CHANGE_SETTING, packet);
@@ -214,18 +290,28 @@ ipcRenderer.on(MAIN_REPLY.ADD_IMG.ACCEPTED, function(e, packet) {
 // callback when main rejected a image
 ipcRenderer.on(MAIN_REPLY.ADD_IMG.REJECTED, function(e, packet) {
   console.log(packet.rejectedReason);
-  $('.modal-content').empty();
+  showAlertModal('無法使用', packet.rejectedReason);
+  /* $('.modal-content').empty();
   $('.modal-content').append('<h4>無法使用</h4>')
   $('.modal-content').append('<p>' + packet.rejectedReason + '</p>');
   $('.modal').modal();
 
   //now you can open modal from code
-  $('#modal1').modal('open');
+  $('#modal1').modal('open'); */
   //$('.modal').modal('open');
 });
 
 ipcRenderer.on(MAIN_REPLY.DEL_IMG, function(e, packet) {
   updateHtml(packet, MAIN_REPLY.DEL_IMG);
+});
+
+ipcRenderer.on(MAIN_REPLY.GO.PLEASE_CONFIRM, function(e, packet) {
+  //showAlertModal(packet.alertTitle, packet.alertContent);
+  showConfirmationModal(packet.alertContent);
+});
+
+ipcRenderer.on(MAIN_REPLY.GO.REJECTED, function(e, packet) {
+  showAlertModal(packet.alertTitle, packet.alertContent);
 });
 
 function updateHtml(packet, replyType) {
@@ -265,3 +351,161 @@ function unpack(packet, replyType) {
   unpackedData.htmlContent = htmlContent;
   return unpackedData;
 }
+
+function showAlertModal(title, content) {
+  $('#alert_modal .modal-content').empty();
+  $('#alert_modal .modal-content').append('<h4>' + title + '</h4>')
+  $('#alert_modal .modal-content').append('<p>' + content + '</p>');
+  $('#alert_modal').modal();
+
+  //now you can open modal from code
+  $('#alert_modal').modal('open');
+  /* $('#modal_confirm_btn').on('click', function() {
+    clickCounter++;
+    console.log('click modal confirm button: ' + clickCounter);
+  }); */
+  //$('.modal').modal('open');
+}
+
+function showConfirmationModal(content) {
+  $('#confirmation_modal').data('confirmed', false);
+  $('#confirmation_modal .modal-content').empty();
+  $('#confirmation_modal .modal-content').append(content);
+  $('#confirmation_modal').modal({
+    dismissible: false, // Modal cannot be dismissed by clicking outside of the modal
+    complete: function() { // Callback for Modal close
+      let confirmed = $('#confirmation_modal').data('confirmed');
+      if (confirmed) {
+        ipcRenderer.send(RENDERER_REQ.GO.CONFIRMED);
+      }
+    }
+  });
+
+  //now you can open modal from code
+  $('#confirmation_modal').modal('open');
+}
+
+$('#confirmation_modal_confirm_btn').on('click', function() {
+  $('#confirmation_modal').data('confirmed', true);
+});
+
+function showInfoupdatingModal(packet) {
+  let indicatorTitle = packet.indicatorTitle;
+  let preloaderInspect = packet.preloaderInspect;
+  let preloaderCleanUp = packet.preloaderCleanUp;
+  let data_hasTurnedOn = $('#infoupdating_modal').data('hasTurnedOn');
+  let hasTurnedOn = (typeof data_hasTurnedOn === 'undefined') ? false : data_hasTurnedOn;
+  console.log('hasTurnedOn: ' + hasTurnedOn);
+  if (!hasTurnedOn) {
+    $('#infoupdating_modal').modal({
+      dismissible: false, // Modal cannot be dismissed by clicking outside of the modal
+      complete: function() { // Callback for Modal close
+        $('#infoupdating_modal').data('hasTurnedOn', false);
+        $('#circle_preloader').removeClass('hide');//.css('display', 'block');
+        $('#preloader_inspect').removeClass('hide');//.css('display', 'block');
+        $('#preloader_cleanup').removeClass('hide');//.css('display', 'block');
+
+        // buttons
+        $('#infoupdating_modal_cancel_btn').removeClass('hide');//.css('display', '');
+        $('#infoupdating_modal_confirm_btn').addClass('hide');//.css('display', 'none');
+
+        // hide cancel reconfirmation
+        $('.cancel_reconfirm').addClass('hide');
+      }
+    });
+  }
+  if (packet.finished) {
+    // hide cancel reconfirmation, because it is too late to cancel the uploading process
+    $('.cancel_reconfirm').addClass('hide');
+
+    $('#circle_preloader').addClass('hide');//.css('display', 'none');
+    $('#infoupdating_modal_cancel_btn').addClass('hide');//.css('display', 'none');
+    $('#infoupdating_modal_confirm_btn').removeClass('hide');//.css('display', '');
+  }
+
+  $('#stage_indicator .title').empty();
+  $('#stage_indicator .title').append('<h5>' + indicatorTitle + '</h5>');
+
+  //$('#preloader_inspect').css('display', 'block');
+  let isForCleanUp = true;
+  let isForInspect = !isForCleanUp;
+  updatePreloader(preloaderInspect, isForInspect);
+  updatePreloader(preloaderCleanUp, isForCleanUp);
+
+  //now you can open modal from code
+  if (!hasTurnedOn) {
+    $('#infoupdating_modal_confirm_btn').addClass('hide');
+    $('#infoupdating_modal').modal('open');
+    $('#infoupdating_modal').data('hasTurnedOn', true);
+  }
+}
+
+$('#infoupdating_modal_cancel_btn').on('click', function() {
+  $('#infoupdating_modal_cancel_btn').addClass('hide');
+  $('.cancel_reconfirm').removeClass('hide');
+});
+
+$('#infoupdating_modal_abort_btn').on('click', function() {
+  ipcRenderer.send(RENDERER_REQ.GO.ABORT);
+});
+
+$('#infoupdating_modal_forget_btn').on('click', function() {
+  $('.cancel_reconfirm').addClass('hide');
+  $('#infoupdating_modal_cancel_btn').removeClass('hide');
+});
+
+function updatePreloader(preloader, isForCleanUp) {
+  let id_preloader = isForCleanUp ? '#preloader_cleanup' : '#preloader_inspect';
+  let determinateSelector = id_preloader + ' .determinate';
+  let fractionSelector = id_preloader + ' .fraction';
+  if (preloader.turnOff) {
+    $(id_preloader).addClass('hide');//.css('display', 'none');
+  } else {
+    $(determinateSelector).css('width', preloader.progressPercent);
+    $(fractionSelector).empty();
+    $(fractionSelector).append(preloader.progressFraction);
+  }
+}
+
+ipcRenderer.on(MAIN_REPLY.GO.ERROR, function(e, packet) {
+  showErrorModal(packet.err);
+});
+
+function showErrorModal(err) {
+  /* console.log('Discription: ' + err.discription);
+  console.log('Type: ' + err.type);
+  console.log('Origin: ' + err.errOrigin);
+  console.log('OriginalErr: ' + err.originalErr); */
+  $('#error_modal .modal-content').empty();
+  $('#error_modal .modal-content').append('<h5>發生錯誤</h5>')
+  $('#error_modal .modal-content').append('<p>' + err.discription + '</p>');
+  
+  $('#error_modal .modal-content').append('<h5>錯誤類別</h5>')
+  $('#error_modal .modal-content').append('<p>' + err.type + '</p>');
+  
+  $('#error_modal .modal-content').append('<h5>錯誤起源</h5>')
+  $('#error_modal .modal-content').append('<p>' + err.errOrigin + '</p>');
+
+  $('#error_modal .modal-content').append('<h5>原始錯誤訊息</h5>')
+  $('#error_modal .modal-content').append('<p>' + err.originalErr + '</p>');
+  $('#error_modal').modal();
+
+  //now you can open modal from code
+  $('#error_modal').modal('open');
+}
+
+function showCancellationModel() {
+  $('#cancellation_model').modal();
+  $('#cancellation_model').modal('open');
+}
+
+ipcRenderer.on(MAIN_REPLY.GO.UPDATE_AUTOPROCESS_INFO, function(e, packet) {
+  /* let indicatorTitle = '準備中...';
+  let preloaderInspect = {turnOn: true, progressPercent: '87%', progressFraction: '87/100'};
+  let preloaderCleanUp = {turnOn: false, progressPercent: '56%', progressFraction: '56/100'};
+  let info = {};
+  info.indicatorTitle = indicatorTitle;
+  info.preloaderInspect = preloaderInspect;
+  info.preloaderCleanUp = preloaderCleanUp; */
+  showInfoupdatingModal(packet);
+}); 
