@@ -73,6 +73,10 @@ img {
   height: 25vh;
 }
 
-#container_pickers {
+/* #container_pickers {
+  display: none;
+} */
+
+.hide {
   display: none;
 }

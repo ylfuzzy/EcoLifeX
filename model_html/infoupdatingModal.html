@@ -1,0 +1,49 @@
+  <div id="infoupdating_modal" class="modal">
+  <div class="modal-content">
+    <div id="stage_indicator" class="row">
+      <div class="col s12 center-align title"></div>
+      <div id="circle_preloader" class="col s4 offset-s4">
+        <div class="preloader-wrapper small active" style="display: block; margin-left: auto; margin-right: auto;">
+          <div class="spinner-layer spinner-green-only">
+            <div class="circle-clipper left">
+              <div class="circle"></div>
+            </div><div class="gap-patch">
+              <div class="circle"></div>
+            </div><div class="circle-clipper right">
+              <div class="circle"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="uploading_indicator">
+      <div id="preloader_inspect" class="row">
+        <div class="col s2 right-align">巡檢：</div>
+        <div class="col s8">
+          <div class="progress">
+              <div class="determinate" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="col s2 fraction">0/0</div>
+      </div>
+      <div id="preloader_cleanup" class="row">
+        <div class="col s2 right-align">清理：</div>
+        <div class="col s8">
+          <div class="progress">
+              <div class="determinate" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="col s2 fraction">0/0</div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <a href="#!" id="infoupdating_modal_cancel_btn" class="modal-action waves-effect waves-green btn-flat red darken-2 white-text">終止</a>
+    <a href="#!" id="infoupdating_modal_confirm_btn" class="modal-action modal-close waves-effect waves-green btn-flat teal lighten-1 white-text">確定</a>
+    <div class="cancel_reconfirm">
+      確定要終止嗎？
+      <a href="#!" id="infoupdating_modal_abort_btn" class="modal-action modal-close waves-effect waves-green btn-flat red darken-2 white-text">確定</a>
+      <a href="#!" id="infoupdating_modal_forget_btn" class="modal-action waves-effect waves-green btn-flat teal lighten-1 white-text">算了</a>
+    </div>
+  </div>
+</div>
