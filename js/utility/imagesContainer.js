@@ -93,7 +93,7 @@ class ImagesContainer {
     return this[packet.tabID][packet.tr_n][packet.imgType];
   }
 
-  getImagesForCInspect() {
+  getImagesForInspect() {
     return this.tab_inspect;
   }
 

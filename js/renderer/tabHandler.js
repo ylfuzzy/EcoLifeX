@@ -1,6 +1,13 @@
 // Select image by dialog
 let dialogOpened = false;
 $('.css_td').on('click', '.box, .preview', function() {
+  /* console.log('$(this): ', $(this));
+  let preview_arr = $('.preview');
+  console.log('$preview_arr: ', $($('.preview')[0]));
+  if (typeof preview_arr[0] !== 'undefined') {
+    let test_pack = pack($($(preview_arr[0])));
+    console.log(test_pack);
+  } */
   let current = $(this);
   console.log(dialogOpened);
   if (!dialogOpened) {
@@ -64,6 +71,7 @@ $('.css_td').on('dragleave', '.box, .preview', function() {
 // Right click to delete image
 $('.css_td').on('contextmenu', '.preview', function() {
   let current = $(this);
+  console.log('delete current: ', current);
   let packet = pack(current);
   console.log(packet);
   ipcRenderer.send(RENDERER_REQ.DEL_IMG, packet);
@@ -187,10 +195,26 @@ $('.setting').on('click', function() {
       $('#container_pickers').removeClass('hide');
     } else {
       $('#container_pickers').addClass('hide');
+      //$('.tab_content').load('tab.html');
+      deleteAllImages();
+      showAlertModal('提醒', '為重新驗證照片日期，已放置的預覽照片將被移除');
     }
   }
   ipcRenderer.send(RENDERER_REQ.CHANGE_SETTING, packet);
 });
+
+function deleteAllImages() {
+  let preview_images = $('.preview');
+  for (let i = 0; i < preview_images.length; i++) {
+    let packet = pack($($(preview_images[i])));
+    ipcRenderer.send(RENDERER_REQ.DEL_IMG, packet);
+  }
+  /* console.log('$preview_arr: ', $($('.preview')[0]));
+  if (typeof preview_arr[0] !== 'undefined') {
+    let test_pack = pack($($(preview_arr[0])));
+    console.log(test_pack);
+  } */
+}
 
 $('#id_datepicker, #id_timepicker').on('change', function() {
   if ($('#id_datepicker').val() === '') {

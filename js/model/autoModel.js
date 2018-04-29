@@ -19,37 +19,47 @@ chromeCapabilities.set('chromeOptions', {args: ['disable-gpu', 'headless', 'wind
   .build(); */
 /* const ERROR_TYPES = {
   WRONG_ID_PASSWD: 'WRONG_ID_PASSWD', UNEXPECTED_ALERT: 'UNEXPECTED_ALERT', TIMEOUT: 'TIMEOUT', UNKNOWN: 'UNKNOWN'}; */
+const ERROR_TYPES = {WRONG_ID_PASSWD: 'WRONG_ID_PASSWD', UNEXPECTED_ALERT: 'UNEXPECTED_ALERT', TIMEOUT: 'TIMEOUT', UNKNOWN: 'UNKNOWN'};
 const CURRENT_DATE = new Date(new Date().getTime() + 8 * 60 * 60 * 1000);
+let driver;
 class AutoModel {
-  constructor() {
-    console.log(path);
-    this.driver = new Builder().withCapabilities(Capabilities.chrome()).build();
-    this.ERROR_TYPES = {WRONG_ID_PASSWD: 'WRONG_ID_PASSWD', UNEXPECTED_ALERT: 'UNEXPECTED_ALERT', TIMEOUT: 'TIMEOUT', UNKNOWN: 'UNKNOWN'};
+  /* constructor() {
+    //console.log(path);
+    //driver = new Builder().withCapabilities(Capabilities.chrome()).build();
+  } */
+
+  async initChromeDriver() {
+    try {
+      console.log('chromedriver path: ' + path);
+      driver = await new Builder().withCapabilities(Capabilities.chrome()).build();
+    } catch (err) {
+      throw err;
+    }
   }
 
   async headlessTest() {
     try {
       // Navigate to google.com, enter a search.
-    /* await this.driver.get('https://bartzutow.xyz/');
-    let windowHandles = await this.driver.getAllWindowHandles();
+    /* await driver.get('https://bartzutow.xyz/');
+    let windowHandles = await driver.getAllWindowHandles();
     console.log(windowHandles.length);
-    await this.driver.switchTo().window(windowHandles[0]);
-    await this.driver.findElement({id: 'user'}).sendKeys('ylfuzzy');
-    await this.driver.findElement({id: 'password'}).sendKeys('babababa');
-    //await this.driver.wait(until.titleIs('webdriver - Google 搜尋'), 1000); */
+    await driver.switchTo().window(windowHandles[0]);
+    await driver.findElement({id: 'user'}).sendKeys('ylfuzzy');
+    await driver.findElement({id: 'password'}).sendKeys('babababa');
+    //await driver.wait(until.titleIs('webdriver - Google 搜尋'), 1000); */
 
     // Try to loing in headless mode
     await this.login();
     let page = 'https://ecolifepanel.epa.gov.tw/journal/clear.aspx';
-    await this.driver.get(page);
-    console.log(await this.driver.getTitle());
+    await driver.get(page);
+    console.log(await driver.getTitle());
   
     // Take screenshot of results page. Save to disk.
-    this.driver.takeScreenshot().then(base64png => {
+    driver.takeScreenshot().then(base64png => {
       fs.writeFileSync('screenshot.png', new Buffer(base64png, 'base64'));
     });
 
-    await this.driver.quit();
+    await driver.quit();
     } catch (err) {
       console.log(err);
     }
@@ -58,7 +68,7 @@ class AutoModel {
   /**
    * The following block is for login
    */
-  async login(id) {
+  async login(id, password) {
     let timeout = 5000;
     let trial = 0;
     let maxTrial = 5;
@@ -66,8 +76,8 @@ class AutoModel {
       try {
         // fill up user id & password
         //let testID = '1002101052';
-        let testPasswd = 'east' + id;
-        await this.__fillInIDPasswd(id, testPasswd);
+        //let testPasswd = 'east' + id;
+        await this.__fillInIDPasswd(id, password);
 
         // try click "go to admin button"
         await this.__goToAdmin();
@@ -76,7 +86,7 @@ class AutoModel {
         console.log('login trial: ' + trial);
         let errToMain = errFromOrigin;
         errToMain.stage = 'login';
-        if (errToMain.type === this.ERROR_TYPES.WRONG_ID_PASSWD || errToMain.type === this.ERROR_TYPES.UNEXPECTED_ALERT) {
+        if (errToMain.type === ERROR_TYPES.WRONG_ID_PASSWD || errToMain.type === ERROR_TYPES.UNEXPECTED_ALERT) {
           throw errToMain
         }
         if (trial < maxTrial) {
@@ -96,12 +106,12 @@ class AutoModel {
       let id_tf_id = 'cphMain_yAxle_y_login_txtID';
       let id_tf_passwd = 'cphMain_yAxle_y_login_txtPWD';
       let id_btn_login = 'cphMain_yAxle_y_login_btnLogin';
-      await this.driver.get(homePage);
-      await this.driver.wait(until.elementLocated(By.id(id_tf_id)), timeout).sendKeys(userID);
-      await this.driver.wait(until.elementLocated(By.id(id_tf_passwd)), timeout).sendKeys(userPasswd);
-      await this.driver.wait(until.elementLocated(By.id(id_btn_login)), timeout).click();
+      await driver.get(homePage);
+      await driver.wait(until.elementLocated(By.id(id_tf_id)), timeout).sendKeys(userID);
+      await driver.wait(until.elementLocated(By.id(id_tf_passwd)), timeout).sendKeys(userPasswd);
+      await driver.wait(until.elementLocated(By.id(id_btn_login)), timeout).click();
     } catch (err) {
-      let errToThrow = await this.__checkError('__fillInIDPasswd', err);
+      let errToThrow = await this.__checkError('__fillInIDPasswd', '無法於登入頁面填入帳號密碼', err);
       throw errToThrow;
     }
   }
@@ -113,18 +123,18 @@ class AutoModel {
     while (true) {
       try {
         let id_btn_goToAdmin = 'cphMain_yAxle_y_login_btnAdmin';
-        await this.driver.wait(until.elementLocated(By.id(id_btn_goToAdmin)), timeout).click();
-        await this.driver.wait(until.titleContains('管理後台'), timeout);
+        await driver.wait(until.elementLocated(By.id(id_btn_goToAdmin)), timeout).click();
+        await driver.wait(until.titleContains('管理後台'), timeout);
         break;
       } catch (err) {
-        let errToThrow = await this.__checkError('__goToAdmin', err);
-        if (errToThrow.type === this.ERROR_TYPES.WRONG_ID_PASSWD || errToThrow.type === this.ERROR_TYPES.UNEXPECTED_ALERT) {
+        let errToThrow = await this.__checkError('__goToAdmin', '無法進入管理後台', err);
+        if (errToThrow.type === ERROR_TYPES.WRONG_ID_PASSWD || errToThrow.type === ERROR_TYPES.UNEXPECTED_ALERT) {
           throw errToThrow;
         }
         if (trial < maxTrial) {
           console.log(errToThrow);
           let homePage = 'https://ecolife.epa.gov.tw/';
-          await this.driver.get(homePage);
+          await driver.get(homePage);
           trial++;
         } else {
           throw errToThrow;
@@ -137,28 +147,21 @@ class AutoModel {
    * The following block is for monthly route renew
    */
   async renewRoute(isForCleanUp) {
-    /* let settingPage = 'https://ecolifepanel.epa.gov.tw/map/area.aspx';
-    if (!isForCleanUp) {
-      settingPage += '?tab=1';
-    } */
     try {
-      // go to setting page
-      /* console.log('Go to setting page');
-      await this.__goToSettingPageHelper(settingPage); */
       let renewInfo = await this.__checkRoutes(isForCleanUp);
       if (renewInfo.isRequired) {
         await this.__fillInRouteSetting(renewInfo.newTitle);
+      } else {
+        console.log(renewInfo.newTitle + ' does not need to renew.');
       }
-      return renewInfo.newTitle;
-    } catch (err) {
-      console.log('============== final catch ==============');
-      console.log(err);
+    } catch (errToMain) {
+      throw errToMain;
     }
   }
 
-  async quiteChrome() {
+  async quitChrome() {
     try {
-      await this.driver.quit();
+      await driver.quit();
     } catch (err) {
       console.log(err);
     }
@@ -175,9 +178,9 @@ class AutoModel {
     let maxTrial = 5;
     while (true) {
       try {
-        await this.driver.get(settingPage);
+        await driver.get(settingPage);
         let css_listTable = '#cphMain_UPList tr';
-        let listTable = await this.driver.wait(until.elementsLocated(By.css(css_listTable)), timeout);
+        let listTable = await driver.wait(until.elementsLocated(By.css(css_listTable)), timeout);
         // idx 1 represents first raw at listTable
         let idx_1stRow = 1;
         let titleColumn = await listTable[idx_1stRow].findElement(By.css('.cell-title'));
@@ -196,13 +199,16 @@ class AutoModel {
         let idx_btnViewRoute = 0;
         await btns[idx_btnViewRoute].click();
         let id_btnEdit = 'cphMain_btnEdit';
-        await this.driver.wait(until.elementLocated(By.id(id_btnEdit)), timeout).click();
+        await driver.wait(until.elementLocated(By.id(id_btnEdit)), timeout).click();
         return renewInfo;
       } catch (err) {
         if (trial < maxTrial) {
           trial++
         } else {
-          throw err;
+          let routeName = isForCleanUp ? '清理' : '巡檢';
+          let discription = '檢查是否需更新' + routeName + '路線時發生錯誤';
+          let errToThrow = await this.__checkError('__checkRoute', discription, err);
+          throw errToThrow;
         }
       }
     }
@@ -215,81 +221,65 @@ class AutoModel {
     let timeout = 5000;
     try {
       let id_sideBar = 'cphMain_ucSidebar_txtNowBlog';
-      let sideBar = await this.driver.wait(until.elementLocated(By.id(id_sideBar)), timeout);
+      let sideBar = await driver.wait(until.elementLocated(By.id(id_sideBar)), timeout);
       let sideBarFullName = await sideBar.getAttribute('value');
       let idx_ref = sideBarFullName.indexOf('里');
       let idx_begin = idx_ref - 2;
       let idx_end = idx_ref + 1;
       let villageName = sideBarFullName.substring(idx_begin, idx_end);
-      return yearROC + '/' + month + '月-' + villageName + routeName + 'test'; 
+      return yearROC + '年' + month + '月-' + villageName + routeName; 
     } catch (err) {
       throw err;
-    }
-  }
-
-  async __goToSettingPageHelper(settingPage) {
-    // wait for elements to be located (milliseconds)
-    let timeout = 5000;
-    let trial = 0;
-    let maxTrial = 5;
-    while (true) {
-      try {
-        // go to setting page
-        let xpath_btn_firstRow = '//*[@id="cphMain_UPList"]/table/tbody/tr[2]/td[6]/input[1]';
-        let id_btn_edit = 'cphMain_btnEdit';
-        await this.driver.get(settingPage);
-        await this.driver.wait(until.elementLocated(By.xpath(xpath_btn_firstRow)), timeout).click();
-        await this.driver.wait(until.elementLocated(By.id(id_btn_edit)), timeout).click();
-        break;
-      } catch (err) {
-        if (trial < maxTrial) {
-          console.log(err);
-          trial++;
-        } else {
-          throw err;
-        }
-      }
     }
   }
 
   async __fillInRouteSetting(newTitle) {
+    let lastClickInfo = {status: undefined};
+    let clickTrial = 0;
     let trial = 0;
     let maxTrial = 5;
     while (true) {
       try {
-        if (trial > 0) {
-          await this.driver.navigate().refresh();
+        if (trial > 0 || clickTrial > 0) {
+          await driver.navigate().refresh();
         }
-        await this.__fillInTitleHelper(newTitle);
-        await this.__switchUserHelper();
-        await this.__clickWhiteSquareHelper();
-        break;
-      } catch (err) {
+        await this.__fillInRouteTitle(newTitle);
+        let clickInfo = await this.__clickWhiteSquare(lastClickInfo);
+        let shouldBreak = true;
+        if (!clickInfo.successfullyClicked && clickTrial < maxTrial) {
+          clickTrial++;
+          lastClickInfo = clickInfo;
+          shouldBreak = false;
+        }
+        if (shouldBreak) {
+          await this.__switchUser();
+          await this.__saveRoute();
+          break;
+        }
+      } catch (errFromOrigin) {
         if (trial < maxTrial) {
           trial++;
         } else {
-          throw err;
+          throw errFromOrigin;
         }
       }
     }
   }
   
-  async __fillInTitleHelper(newTitle) {
+  async __fillInRouteTitle(newTitle) {
     let timeout = 5000;
     try {
-      /* let title_inspect = '107/02-崇文里巡檢路線';
-      let title_cleanUp = '107/02-崇文里清理路線';
-      let titleToBeFilled = isForCleanUp ? title_cleanUp : title_inspect; */
       let id_tf_title = 'cphMain_txtAreaName';
-      let tf_title = await this.driver.wait(until.elementLocated(By.id(id_tf_title)), timeout);
+      let tf_title = await driver.wait(until.elementLocated(By.id(id_tf_title)), timeout);
       await tf_title.clear();
       await tf_title.sendKeys(newTitle);
     } catch (err) {
-      throw err;
+      let errToThrow = await this.__checkError('__fillInRouteTitle', '更新路線標題時發生錯誤', err);
+      throw errToThrow;
     }
   }
   
-  async __clickWhiteSquareHelper() {
+  async __clickWhiteSquare(lastClickInfo) {
     let tiemout = 10000;
     let trial = 0;
     let maxTrial = 5;
@@ -298,9 +288,19 @@ class AutoModel {
         let squares = await this.__getWhiteSquares();
         // if the number of squares is even, add a point, else delete the last point.
         console.log('squares length before click: ' + squares.length);
-        let actions = this.driver.actions();
-        if (squares.length % 2 === 0) {
-          await actions.mouseMove(squares[0], {x: 5, y: 0}).click().perform();
+        let actions = driver.actions();
+        let shouldAddNewSquare = squares.length % 2 === 0;
+        let adjustment;
+        let x_offset;
+        if (shouldAddNewSquare) {
+          x_offset = this.__getRandomInt(100, 200);//300;//110 + 100 * clickTrial;//this.__getRandomInt(100, 200);
+          if (typeof lastClickInfo.status !== 'undefined') {
+            adjustment = Math.floor(lastClickInfo.x_offset / 2);
+            x_offset =  lastClickInfo.x_offset + (lastClickInfo.status === 'too_short' ? adjustment : -adjustment);
+          }
+          console.log('x offset: ' + x_offset);
+          console.log('adjustment: ' + adjustment);
+          await actions.mouseMove(squares[0], {x: x_offset, y: 0}).click().perform();
         } else {
           // await squares[squares.length - 1].click();
           let idx_squareToDelete = await this.__isRoute() ? squares.length - 1 : squares.length - 2;
@@ -308,14 +308,26 @@ class AutoModel {
         }
         let squaresAfterClick = await this.__getWhiteSquares();
         console.log('squares length after click: ' + squaresAfterClick.length);
-        break;
+        let clickInfo = {successfullyClicked: true};
+        if (shouldAddNewSquare) {
+          clickInfo.x_offset = x_offset;
+          if (squaresAfterClick.length < squares.length) {
+            clickInfo.status = 'too_short';
+            clickInfo.successfullyClicked = false;
+          } else if (squaresAfterClick.length === squares.length) {
+            clickInfo.status = 'too_long';
+            clickInfo.successfullyClicked = false;
+          }
+        }
+        return clickInfo;
       } catch (err) {
         if (trial < maxTrial) {
           console.log('click White Square: ' + trial);
           console.log(err);
           trial++
         } else {
-          throw err;
+          let errToThrow = await this.__checkError('__fillInRouteTitle', '調整地圖路線時發生錯誤', err);
+          throw errToThrow;
         }
       }
     }
@@ -323,7 +335,7 @@ class AutoModel {
 
   async __isRoute() {
     try {
-      let type = await this.driver.wait(until.elementLocated(By.id('cphMain_labModeType')));
+      let type = await driver.wait(until.elementLocated(By.id('cphMain_labModeType')));
       let typeStr = await type.getText();
       return typeStr.includes('路線');
     } catch (err) {
@@ -335,7 +347,7 @@ class AutoModel {
     let timeout = 5000;
     try {
       let css_squareSelector = '.leaflet-marker-pane img';
-      let unfilteredImgs = await this.driver.wait(until.elementsLocated(By.css(css_squareSelector)), timeout);
+      let unfilteredImgs = await driver.wait(until.elementsLocated(By.css(css_squareSelector)), timeout);
       let squares = [];
       for (let i = 0; i < unfilteredImgs.length; i++) {
         let img_src = await unfilteredImgs[i].getAttribute('src');
@@ -349,16 +361,16 @@ class AutoModel {
     }
   }
   
-  async __switchUserHelper() {
-    let timeout = 10000;
+  async __switchUser() {
+    let timeout = 5000;
     try {
       let id_switchUser = 'divShiftList';
       let xpath_hrefForSwitchUser = '//*[@id="divShiftList"]/a';
-      await this.driver.wait(until.elementLocated(By.xpath(xpath_hrefForSwitchUser)), timeout).click();
+      await driver.wait(until.elementLocated(By.xpath(xpath_hrefForSwitchUser)), timeout).click();
       
       // Get user list and switch user
       let css_userListSelector = 'ul.user_list li';
-      let userList = await this.driver.wait(until.elementsLocated(By.css(css_userListSelector)), timeout);
+      let userList = await driver.wait(until.elementsLocated(By.css(css_userListSelector)), timeout);
       let activeUserExist = false;
       for (let i = 0; i < userList.length; i++) {
         let class_li = await userList[i].getAttribute('class');
@@ -374,7 +386,19 @@ class AutoModel {
         await userList[0].findElement(By.css('a')).click();
       }
     } catch (err) {
-      throw err;
+      let errToThrow = await this.__checkError('__switchUser', '更新路線管理人時發生錯誤', err);
+      throw errToThrow;
+    }
+  }
+
+  async __saveRoute() {
+    let timeout = 5000;
+    try {
+      let id_btnSaveRoute = 'cphMain_btnOk';
+      await driver.wait(until.elementLocated(By.id(id_btnSaveRoute)), timeout).click();
+    } catch (err) {
+      let errToThrow = await this.__checkError('__saveRoute', '無法儲存更新過後的路線', err);
+      throw errToThrow;
     }
   }
 
@@ -382,6 +406,7 @@ class AutoModel {
    *  The following is for upload image
    */
   async publishJournal(imageSet, isForCleanUp) {
+    console.log('publishing-----------------------');
     let timeout = 5000;
     let trial = 0;
     let maxTrial = 5;
@@ -393,7 +418,7 @@ class AutoModel {
         // To check whether the journal is succesfully published
         await this.__checkPublishStatus();
         break;
-        /* let finalAlert = await this.driver.wait(until.alertIsPresent(), timeout);
+        /* let finalAlert = await driver.wait(until.alertIsPresent(), timeout);
         let message = await finalAlert.getText();
         await finalAlert.accept();
         if (message.includes('已經發表成功')) {
@@ -407,7 +432,7 @@ class AutoModel {
         console.log(errFromOrigin);
         let errToMain = errFromOrigin;
         errToMain.stage = 'publishJournal';
-        if (errToMain.type === this.ERROR_TYPES.UNEXPECTED_ALERT || errToMain.type === this.ERROR_TYPES.UNKNOWN) {
+        if (errToMain.type === ERROR_TYPES.UNEXPECTED_ALERT || errToMain.type === ERROR_TYPES.UNKNOWN) {
           throw errToMain;
         }
         if (trial < maxTrial) {
@@ -435,10 +460,10 @@ class AutoModel {
     let page = 'https://ecolifepanel.epa.gov.tw/journal/';
     page += isForCleanUp ? 'clear.aspx' : 'inspect.aspx';
     try {
-      await this.driver.get(page);
+      await driver.get(page);
       await this.__acceptAlertAndGetText();
     } catch(err) {
-      let errToThrow = await this.__checkError('__goToPublishPage', err);
+      let errToThrow = await this.__checkError('__goToPublishPage', '無法進入發表頁面', err);
       throw errToThrow;
     }
   }
@@ -463,7 +488,7 @@ class AutoModel {
                                       css_cleanUpOnly_endDateOptions];
       let selectorsLength = isForCleanUp ? css_dateTimeSelectors.length : css_dateTimeSelectors.length - 1;
       for (let idx_selector = 0; idx_selector < selectorsLength; idx_selector++) {
-        let dateTimeOptions = await this.driver.wait(until.elementsLocated(By.css(css_dateTimeSelectors[idx_selector])), timeout);
+        let dateTimeOptions = await driver.wait(until.elementsLocated(By.css(css_dateTimeSelectors[idx_selector])), timeout);
         for (let idx_option = 0; idx_option < dateTimeOptions.length; idx_option++) {
           let value = await dateTimeOptions[idx_option].getAttribute('value');
           if (value === sutableTimeRange[idx_selector].toString()) {
@@ -473,7 +498,7 @@ class AutoModel {
         }
       }
     } catch (err) {
-      let errToThrow = await this.__checkError('__selectTimeRange', err);
+      let errToThrow = await this.__checkError('__selectTimeRange', '選擇日期時發生錯誤', err);
       throw errToThrow;
     }
   }
@@ -482,11 +507,11 @@ class AutoModel {
     let timeout = 5000;
     try {
       let css_routeOptions = '#cphMain_cboClear option';
-      let routeOptions = await this.driver.wait(until.elementsLocated(By.css(css_routeOptions)), timeout);
+      let routeOptions = await driver.wait(until.elementsLocated(By.css(css_routeOptions)), timeout);
       let idx_firstRoute = 1;
       await routeOptions[idx_firstRoute].click();
     } catch (err) {
-      let errToThrow = await this.__checkError('__selectRoute', err);
+      let errToThrow = await this.__checkError('__selectRoute', '選擇路線表單時發生錯誤', err);
       throw errToThrow;
     }
   }
@@ -495,8 +520,8 @@ class AutoModel {
     let timeout = 5000;
     try {
       let id_btn_createJournal = 'cphMain_btnOk';
-      await this.driver.wait(until.elementLocated(By.id(id_btn_createJournal)), timeout).click();
-      /* let alert = await this.driver.wait(until.alertIsPresent(), timeout);
+      await driver.wait(until.elementLocated(By.id(id_btn_createJournal)), timeout).click();
+      /* let alert = await driver.wait(until.alertIsPresent(), timeout);
       await alert.accept(); */
       await this.__acceptAlertAndGetText();
 
@@ -504,7 +529,7 @@ class AutoModel {
 		  // there will be another popup alert.
       if (!isForCleanUp) {
         try {
-          /* alert = await this.driver.wait(until.alertIsPresent(), timeout);
+          /* alert = await driver.wait(until.alertIsPresent(), timeout);
           await alert.accept(); */
           await this.__acceptAlertAndGetText();
         } catch (err) {
@@ -512,7 +537,7 @@ class AutoModel {
         }
       }
     } catch (err) {
-      let errToThrow = await this.__checkError('__clickJournalCreationButton', err);
+      let errToThrow = await this.__checkError('__clickJournalCreationButton', '無法轉跳至建立新日誌的頁面', err);
       throw errToThrow;
     }
   }
@@ -530,11 +555,11 @@ class AutoModel {
         break;
       } catch (errFromOrigin) {
         console.log(errFromOrigin);
-        if (errFromOrigin.type === this.ERROR_TYPES.UNEXPECTED_ALERT) {
+        if (errFromOrigin.type === ERROR_TYPES.UNEXPECTED_ALERT) {
           throw errFromOrigin;
         }
         if (trial < maxTrial) {
-          await this.driver.navigate().refresh();
+          await driver.navigate().refresh();
           trial++;
         } else {
           throw errFromOrigin;
@@ -549,11 +574,11 @@ class AutoModel {
     let maxTrial = 5;
     try {
       let id_btn_iconSelection = 'cphMain_btnIcon';
-      await this.driver.wait(until.elementLocated(By.id(id_btn_iconSelection)), timeout).click();
+      await driver.wait(until.elementLocated(By.id(id_btn_iconSelection)), timeout).click();
       let xpath_trashIcon = '//*[@id="cphMain_ucIcon_divEcolife"]/ul[2]/li[10]/a';
-      await this.driver.wait(until.elementLocated(By.xpath(xpath_trashIcon)), timeout).click();
+      await driver.wait(until.elementLocated(By.xpath(xpath_trashIcon)), timeout).click();
     } catch (err) {
-      let errToThrow = await this.__checkError('__clickTrashIcon', err);
+      let errToThrow = await this.__checkError('__clickTrashIcon', '點擊紅色的垃圾小圖示時發生錯誤', err);
       throw errToThrow;
     }
   }
@@ -561,25 +586,29 @@ class AutoModel {
   async __clickRandomWhiteSquare() {
     try {
       let squares = await this.__getWhiteSquares();
-      let idx_randomSquare = Math.floor(Math.random() * Math.floor(squares.length));
+      let idx_randomSquare = this.__getRandomInt(0, squares.length - 1);//Math.floor(Math.random() * Math.floor(squares.length));
       console.log('random square is: ' + idx_randomSquare);
-      let actions = this.driver.actions();
+      let actions = driver.actions();
       await actions.mouseMove(squares[idx_randomSquare]).click().perform();
     } catch (err) {
-      let errToThrow = await this.__checkError('__clickRandomWhiteSquare', err);
+      let errToThrow = await this.__checkError('__clickRandomWhiteSquare', '點擊地圖路線上的白點時發生錯誤', err);
       throw errToThrow;
     }
+  }
+
+  __getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
   async __selectArea() {
     let timeout = 5000;
     try {
       let css_areaOptions = '#cphMain_cboLocality option';
-      let areaOptions = await this.driver.wait(until.elementsLocated(By.css(css_areaOptions)), timeout);
+      let areaOptions = await driver.wait(until.elementsLocated(By.css(css_areaOptions)), timeout);
       let idx_road = 8;
       await areaOptions[idx_road].click();
     } catch (err) {
-      let errToThrow = await this.__checkError('__selectArea', err);
+      let errToThrow = await this.__checkError('__selectArea', '選擇垃圾所在地的類別時發生錯誤', err);
       throw errToThrow;
     }
   }
@@ -589,10 +618,10 @@ class AutoModel {
     try {
       let id_btn_dirtyImageSelection = 'cphMain_ucImageUpload_1_fup';
       let id_btn_cleanImageSelection = 'cphMain_ucImageUpload_3_fup';
-      await this.driver.wait(until.elementLocated(By.id(id_btn_dirtyImageSelection)), timeout).sendKeys(imageSet.dirty.uploadingPath);
-      await this.driver.wait(until.elementLocated(By.id(id_btn_cleanImageSelection)), timeout).sendKeys(imageSet.clean.uploadingPath);
+      await driver.wait(until.elementLocated(By.id(id_btn_dirtyImageSelection)), timeout).sendKeys(imageSet.dirty.uploadingPath);
+      await driver.wait(until.elementLocated(By.id(id_btn_cleanImageSelection)), timeout).sendKeys(imageSet.clean.uploadingPath);
     } catch (err) {
-      let errToThrow = await this.__checkError('__uplaodImageSet', err);
+      let errToThrow = await this.__checkError('__uplaodImageSet', '上傳照片時發生錯誤', err);
       throw errToThrow;
     }
   }
@@ -601,12 +630,12 @@ class AutoModel {
     let timeout = 5000;
     try {
       let id_btn_journalPublish = 'cphMain_btnPost';
-      await this.driver.wait(until.elementLocated(By.id(id_btn_journalPublish)), timeout).click();
-      /* let alert = await this.driver.wait(until.alertIsPresent(), timeout);
+      await driver.wait(until.elementLocated(By.id(id_btn_journalPublish)), timeout).click();
+      /* let alert = await driver.wait(until.alertIsPresent(), timeout);
       await alert.accept(); */
       await this.__acceptAlertAndGetText();
     } catch (err) {
-      let errToThrow = await this.__checkError('__clickJournalPublishButton', err);
+      let errToThrow = await this.__checkError('__clickJournalPublishButton', '點擊發表日誌的按鈕時發生錯誤', err);
       throw errToThrow;
     }
   }
@@ -616,17 +645,18 @@ class AutoModel {
     let errToThrow;
     try {
       // To check whether the journal is succesfully published
-      /* let finalAlert = await this.driver.wait(until.alertIsPresent(), timeout);
+      /* let finalAlert = await driver.wait(until.alertIsPresent(), timeout);
       let message = await finalAlert.getText();
       await finalAlert.accept(); */
       let alertMessage = await this.__acceptAlertAndGetText();
       if (!alertMessage.includes('已經發表成功')) {
-        errToThrow = await this.__checkError('__checkPublishStatus', err);
-        errToThrow.type = this.ERROR_TYPES.UNEXPECTED_ALERT;
+        let discription = '日誌發表完畢後的最終檢查階段發生錯誤，因為出現不明警示視窗，內容為： ' + alertMessage;
+        errToThrow = await this.__checkError('__checkPublishStatus', discription);
+        errToThrow.type = ERROR_TYPES.UNEXPECTED_ALERT;
         throw errToThrow;
       }
     } catch (err) {
-      errToThrow = await this.__checkError('__checkPublishStatus', err);
+      errToThrow = await this.__checkError('__checkPublishStatus', '日誌發表完畢後的最終檢查階段發生錯誤', err);
       throw errToThrow;
     }
   }
@@ -635,10 +665,10 @@ class AutoModel {
     let timeout = 5000;
     try {
       let id_btn_draftDeletion = 'cphMain_btnDelete';
-      await this.driver.wait(until.elementLocated(By.id(id_btn_draftDeletion)), timeout).click();
-      let alert = await this.driver.wait(until.alertIsPresent(), timeout);
+      await driver.wait(until.elementLocated(By.id(id_btn_draftDeletion)), timeout).click();
+      let alert = await driver.wait(until.alertIsPresent(), timeout);
       await alert.accept();
-      alert = await this.driver.wait(until.alertIsPresent(), timeout);
+      alert = await driver.wait(until.alertIsPresent(), timeout);
       await alert.accept();
     } catch (err) {
       throw err;
@@ -654,27 +684,27 @@ class AutoModel {
       try {
         if (isFirstTime) {
           let page = 'https://ecolifepanel.epa.gov.tw/journal/inspectlist.aspx';
-          await this.driver.get(page);
+          await driver.get(page);
           isFirstTime = false;
         }
         let css_listTable = '.gray';
-        let listTable = await this.driver.wait(until.elementsLocated(By.css(css_listTable)), timeout);
+        let listTable = await driver.wait(until.elementsLocated(By.css(css_listTable)), timeout);
         if (listTable.length === 0) {
           break;
         }
         let row = await listTable[0].findElements(By.css('.cell-actions'));
         let btn_view = await row[0].findElements(By.css('input'));
         await btn_view[0].click();
-        let windowHandles = await this.driver.getAllWindowHandles();
+        let windowHandles = await driver.getAllWindowHandles();
         console.log(windowHandles.length);        
-        await this.driver.close();
-        await this.driver.switchTo().window(windowHandles[1]);
-        //console.log(await this.driver.getTitle());
+        await driver.close();
+        await driver.switchTo().window(windowHandles[1]);
+        //console.log(await driver.getTitle());
         let id_btn_draftDeletion = 'cphMain_btnDelete';
-        await this.driver.wait(until.elementLocated(By.id(id_btn_draftDeletion)), timeout).click();
-        let alert = await this.driver.wait(until.alertIsPresent(), timeout);
+        await driver.wait(until.elementLocated(By.id(id_btn_draftDeletion)), timeout).click();
+        let alert = await driver.wait(until.alertIsPresent(), timeout);
         await alert.accept();
-        alert = await this.driver.wait(until.alertIsPresent(), timeout);
+        alert = await driver.wait(until.alertIsPresent(), timeout);
         await alert.accept();
       } catch (err) {
         console.log(err);
@@ -688,16 +718,20 @@ class AutoModel {
     }
   }
 
-  async __checkError(functionName, err) {
-    let errToThrow = {errOrigin: functionName, type: this.ERROR_TYPES.TIMEOUT, originType: err};
+  async __checkError(functionName, discription, err) {
+    let errToThrow = {
+      errOrigin: functionName, 
+      discription: discription,
+      type: ERROR_TYPES.TIMEOUT,
+      originalErr: err};
     if (err instanceof SeleniumError.UnexpectedAlertOpenError) {
-      errToThrow.type = this.ERROR_TYPES.UNEXPECTED_ALERT;
-      let alert = await this.driver.switchTo().alert();
+      errToThrow.type = ERROR_TYPES.UNEXPECTED_ALERT;
+      let alert = await driver.switchTo().alert();
       let alertMessage = await alert.getText();
       await alert.accept();
-      let typoString = '很抱歉，您輸入的帳號無法登入，可能原因為帳號輸入錯誤';
-      if (alertMessage.includes(typoString)) {
-        errToThrow.type = this.ERROR_TYPES.WRONG_ID_PASSWD;
+      let wrongLoginInfo = '很抱歉，您輸入的帳號無法登入，可能原因為帳號輸入錯誤';
+      if (alertMessage.includes(wrongLoginInfo)) {
+        errToThrow.type = ERROR_TYPES.WRONG_ID_PASSWD;
       }
     }
     return errToThrow;
@@ -706,7 +740,7 @@ class AutoModel {
   async __acceptAlertAndGetText() {
     let timeout = 5000;
     try {
-      let alert = await this.driver.wait(until.alertIsPresent(), timeout);
+      let alert = await driver.wait(until.alertIsPresent(), timeout);
       let alertMessage = await alert.getText();
       await alert.accept();
       return alertMessage;

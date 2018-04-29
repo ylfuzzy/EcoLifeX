@@ -125,6 +125,7 @@ ipcMain.on(RENDERER_REQ.GO.CONFIRMED, function(e) {
   console.log('for cleanUp: ');
   console.log(imgSetsForCleanUp);
   autoProcess();
+  //testAllUsers();
 });
 
 ipcMain.on(RENDERER_REQ.GO.ABORT, function(e) {
@@ -213,8 +214,8 @@ async function autoProcess() {
     await autoModel.login(userInfo.id, userInfo.password);
     let isForCleanUp = true;
     let isForInspect = !isForCleanUp;
-    //await upload(imgSetsForInspect, isForInspect);
-    //await upload(imgSetsForCleanUp, isForCleanUp);
+    await upload(imgSetsForInspect, isForInspect);
+    await upload(imgSetsForCleanUp, isForCleanUp);
 
     // info update
     indicatorTitle = '上傳完畢';
@@ -347,9 +348,12 @@ async function testAllUsers() {
                         '1002101038', '1002101030', '1002101034', '1002101004', '1002101036',
                           '1002101043', '1002101003', '1002101007', '1002101010', '1002101053',
                             '1002101018', '1002101025', '1002101051', '1002101052', '1002101015']
+  let isForCleanUp = true;
+  let isForInspect = !isForCleanUp;
   for (let i = 0; i < ids.length; i++) {
     //console.log('Now is testing id: ' + ids[i]);
     let autoModel = new AutoModel();
+    await autoModel.initChromeDriver();
     await autoModel.login(ids[i], 'east' + ids[i]);
     await autoModel.renewRoute(isForCleanUp);
     let newTitle = await autoModel.renewRoute(isForInspect);
@@ -392,7 +396,7 @@ function packAutoProcessInfo(indicatorTitle, preloaderInspect, preloaderCleanUp)
   packet.indicatorTitle = indicatorTitle;
   packet.preloaderInspect = preloaderInspect;
   packet.preloaderCleanUp = preloaderCleanUp;
-  packet.finished = indicatorTitle === '上傳完畢';
+  packet.finished = (indicatorTitle === '上傳完畢');
   console.log(packet);
   return packet
 }

@@ -28,8 +28,12 @@
     <div id="tab_login"></div>
     <div id="tab_setting"></div>
   </div>
-  <div class="modal_content"></div>
-
+  <div class="modal_content alert"></div>
+  <div class="modal_content confirmation"></div>
+  <div class="modal_content infoupdating"></div>
+  <div class="modal_content error"></div>
+  <div class="modal_content cancellation"></div>
+  
   <!-- Insert this line above script imports  -->
   <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
 
@@ -44,13 +48,24 @@
   <script> 
     // Initialize global variables
     const {ipcRenderer} = require('electron');
-    const RENDERER_REQ = {ADD_IMG: 'REQ:ADD_IMG', DEL_IMG: 'REQ:DEL_IMG', GO: 'REQ:GO',
+    RENDERER_REQ = {
+      ADD_IMG: 'REQ:ADD_IMG',
+      DEL_IMG: 'REQ:DEL_IMG',
+      GO: {
+        REQUEST_TO_GO:'REQ:GO:REQUEST_TO_GO',
+        CONFIRMED: 'REQ:GO:CONFIRMED',
+        ABORT: 'REPLY:GO:ABORT'},
       CHANGE_SETTING: 'REQ:CHANGE_SETTING'};
     const MAIN_REPLY = {
       ADD_IMG: {
-          ACCEPTED: 'REPLY:ADD_IMG:ACCEPTED',
-          REJECTED: 'REPLY:ADD_IMG:REJECTED'},
-      DEL_IMG: 'REPLY:DEL_IMG'
+        ACCEPTED: 'REPLY:ADD_IMG:ACCEPTED',
+        REJECTED: 'REPLY:ADD_IMG:REJECTED'},
+      DEL_IMG: 'REPLY:DEL_IMG',
+      GO: {
+        PLEASE_CONFIRM: 'REPLY:GO:PLEASE_CONFIRM',
+        REJECTED: 'REPLY:GO:REJECTED',
+        UPDATE_AUTOPROCESS_INFO: 'REPLY:GO:UPDATE_AUTOPROCESS_INFO',
+        ERROR: 'REPLY:GO:ERROR'}
     };
     
     // Load htmls
@@ -61,20 +76,24 @@
       $('#tab_login').load('login.html');
       // Load setting
       $('#tab_setting').load('setting.html');
-      // Try to load alertModal
-      $('.modal_content').load('alertModal.html');
-
+      // Try to load Modals
+      $('.modal_content.alert').load('model_html/alertModal.html');
+      $('.modal_content.confirmation').load('model_html/confirmationModal.html');
+      $('.modal_content.infoupdating').load('model_html/infoupdatingModal.html');
+      $('.modal_content.error').load('model_html/errorModal.html');
+      $('.modal_content.cancellation').load('model_html/cancellationModal.html');
+      
       // Load global vars
       /* var renderGlobalVar = 'js/renderer/renderGlobalVar.js';
       $.getScript(renderGlobalVar); */
 
       // Load js handlers for tab pages
-      var tabHandler = 'js/renderer/tabHandler2.js';
+      let tabHandler = 'js/renderer/tabHandler.js';
       $.getScript(tabHandler);
-      var loginHandler = 'js/renderer/loginHandler.js';
-      $.getScript(loginHandler);
-      var settingHandler = 'js/renderer/settingHandler.js';
-      $.getScript(settingHandler);
+      /* let loginHandler = 'js/renderer/loginHandler.js';
+      $.getScript(loginHandler); */
+      /* let settingHandler = 'js/renderer/settingHandler.js';
+      $.getScript(settingHandler); */
     });
   </script>
   <!-- <script src="js/util/tabHandler.js"></script> -->
