@@ -196,8 +196,10 @@ $('.setting').on('click', function() {
     } else {
       $('#container_pickers').addClass('hide');
       //$('.tab_content').load('tab.html');
-      deleteAllImages();
-      showAlertModal('提醒', '為重新驗證照片日期，已放置的預覽照片將被移除');
+      let gotImagesToDelete = deleteAllImages();
+      if (gotImagesToDelete) {
+        showAlertModal('提醒', '為重新驗證照片日期，已放置的預覽照片將被移除');
+      }
     }
   }
   ipcRenderer.send(RENDERER_REQ.CHANGE_SETTING, packet);
@@ -205,10 +207,12 @@ $('.setting').on('click', function() {
 
 function deleteAllImages() {
   let preview_images = $('.preview');
+  let gotImagesToDelete = (preview_images.length > 0);
   for (let i = 0; i < preview_images.length; i++) {
     let packet = pack($($(preview_images[i])));
     ipcRenderer.send(RENDERER_REQ.DEL_IMG, packet);
   }
+  return gotImagesToDelete;
   /* console.log('$preview_arr: ', $($('.preview')[0]));
   if (typeof preview_arr[0] !== 'undefined') {
     let test_pack = pack($($(preview_arr[0])));
