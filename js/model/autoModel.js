@@ -2,7 +2,7 @@ const ImagesProcessor = require(__base + 'js/utility/imagesProcessor');
 const {Builder, Capabilities, By, Key, until} = require('selenium-webdriver');
 const SeleniumError = require('selenium-webdriver/lib/error');
 const chrome = require('selenium-webdriver/chrome');
-const path = __base + 'js/model/chromedriver';
+const path = __base + 'js/model/chromedriver';//'node_modules/.bin/chromedriver'
 const service = new chrome.ServiceBuilder(path).build();
 chrome.setDefaultService(service);
 /* const options = new chrome.Options().headless();

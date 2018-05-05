@@ -33,6 +33,11 @@ let imagesContainer = new ImagesContainer();
 let setting = {compressing: false, dateChanging: false, pickedDate: undefined};
 // Listen for app to be ready
 app.on('ready', function() {
+  // Create modifiedImgs folder if necessary
+  let dirPath = __base + 'modifiedImgs';
+  if (!fs.existsSync(dirPath)){
+    fs.mkdirSync(dirPath);
+  }
   // Create new window
   mainWindow = new BrowserWindow({});
   // Load html into window
@@ -130,6 +135,7 @@ ipcMain.on(RENDERER_REQ.GO.CONFIRMED, function(e) {
 
 ipcMain.on(RENDERER_REQ.GO.ABORT, function(e) {
   (async function() {
+    console.log('try to quit chrome!');
     abortedByUser = true;
     await autoModel.quitChrome();
   })();

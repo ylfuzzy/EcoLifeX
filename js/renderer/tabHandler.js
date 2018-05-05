@@ -443,7 +443,7 @@ function showInfoupdatingModal(packet) {
     });
   }
   if (packet.finished) {
-    // hide cancel reconfirmation, because it is too late to cancel the uploading process
+    // hide cancel reconfirmation, because there is no need to cancel the uploading process
     $('.cancel_reconfirm').addClass('hide');
 
     $('#circle_preloader').addClass('hide');//.css('display', 'none');
@@ -496,6 +496,7 @@ function updatePreloader(preloader, isForCleanUp) {
 }
 
 ipcRenderer.on(MAIN_REPLY.GO.ERROR, function(e, packet) {
+  $('#infoupdating_modal').modal('close');
   showErrorModal(packet.err);
 });
 
