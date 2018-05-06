@@ -56,8 +56,11 @@
   line-height: 100px;
 }
 
-.tabs .indicator {
+/*.tabs .indicator {
   color: blue;
+} */
+.indicator {
+  overflow: hidden;
 }
 
 img {
@@ -70,7 +73,7 @@ img {
 }
 
 .row.top_padding {
-  height: 25vh;
+  height: 15vh;
 }
 
 /* #container_pickers {

@@ -3,6 +3,7 @@ const electron = require('electron');
 const fs = require('fs');
 const url = require('url');
 const path = require('path');
+const {exec} = require('child_process');
 const {app, BrowserWindow, ipcMain, dialog} = electron;
 const sharp = require('sharp');
 const AutoModel = require(__base + 'js/model/autoModel');
@@ -46,12 +47,24 @@ app.on('ready', function() {
     protocol: 'file',
     slashes: true
   }));
+
+  mainWindow.on('closed', function() {
+    console.log('closed!!!!!~~~~~~');
+    app.quit();
+  });
 });
 
 app.on('before-quit', function(e) {
   console.log('app quits');
   //e.preventDefault();
   ImagesProcessor.deleteModifiedImages();
+  let cmd_killChromeDriverExe = 'taskkill /im chromedriver.exe /f';
+  exec(cmd_killChromeDriverExe, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`exec error: ${error}`);
+      return;
+    }
+  });
   //autoModel.quitChrome(); bug occurs!!!!
 });
 
