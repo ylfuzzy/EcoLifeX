@@ -4,12 +4,13 @@ const fs = require('fs');
 const url = require('url');
 const path = require('path');
 const {exec} = require('child_process');
-const {app, BrowserWindow, ipcMain, dialog} = electron;
 const sharp = require('sharp');
 const AutoModel = require(__base + 'js/model/autoModel');
 const ImagesContainer = require(__base + 'js/utility/imagesContainer');
 const ImagesProcessor = require(__base + 'js/utility/imagesProcessor');
 const RENDERER_REQ = {
+  INIT_SETTING: 'REQ:INIT_SETTING',
+  CHECK_UPDATE: 'CHECK_UPDATE',
   ADD_IMG: 'REQ:ADD_IMG',
   DEL_IMG: 'REQ:DEL_IMG',
   GO: {
@@ -18,6 +19,7 @@ const RENDERER_REQ = {
     ABORT: 'REPLY:GO:ABORT'},
   CHANGE_SETTING: 'REQ:CHANGE_SETTING'};
 const MAIN_REPLY = {
+  INIT_SETTING: 'REPLY:INIT_SETTING',
   ADD_IMG: {
     ACCEPTED: 'REPLY:ADD_IMG:ACCEPTED',
     REJECTED: 'REPLY:ADD_IMG:REJECTED'},
@@ -28,19 +30,41 @@ const MAIN_REPLY = {
     UPDATE_AUTOPROCESS_INFO: 'REPLY:GO:UPDATE_AUTOPROCESS_INFO',
     ERROR: 'REPLY:GO:ERROR'}
 };
+const {app, BrowserWindow, ipcMain, dialog} = electron;
+const {autoUpdater} = require("electron-updater");
+autoUpdater.autoDownload = false;
+autoUpdater.logger = require("electron-log")
+autoUpdater.logger.transports.file.level = "info"
 
 let mainWindow;
 let imagesContainer = new ImagesContainer();
-let setting = {compressing: false, dateChanging: false, pickedDate: undefined};
+let setting = {compressing: false, dateChanging: false, pickedDate: undefined, autoUpdating: false};
+
+// Save user setting
+function saveSetting() {
+  let settingToSave = {compressing: 'false', dateChanging: 'fasle', autoUpdating: 'false'};
+  if (setting.compressing) {
+    settingToSave.compressing = 'true';  
+  }
+  if (setting.dateChanging) {
+    settingToSave.dateChanging = 'true';  
+  }
+  if (setting.autoUpdating) {
+    settingToSave.autoUpdating = 'true';  
+  }
+  let data = JSON.stringify(settingToSave, null, 2);
+
+  fs.writeFile('setting.json', data, (err) => {
+      if (err) throw err;
+      console.log('Data written to file');
+  });
+}
+
 // Listen for app to be ready
 app.on('ready', function() {
-  // Create modifiedImgs folder if necessary
-  let dirPath = __base + 'modifiedImgs';
-  if (!fs.existsSync(dirPath)){
-    fs.mkdirSync(dirPath);
-  }
   // Create new window
   mainWindow = new BrowserWindow({});
+
   // Load html into window
   mainWindow.loadURL(url.format({
     pathname: path.join(__dirname, 'mainWindow.html'),
@@ -52,6 +76,13 @@ app.on('ready', function() {
     console.log('closed!!!!!~~~~~~');
     app.quit();
   });
+
+  // Create modifiedImgs folder if necessary
+  let folderName =  'modifiedImgs';
+  let dirPath = __base + folderName;
+  if (!fs.existsSync(dirPath)){
+    fs.mkdirSync(dirPath);
+  }
 });
 
 app.on('before-quit', function(e) {
@@ -66,6 +97,30 @@ app.on('before-quit', function(e) {
     }
   });
   //autoModel.quitChrome(); bug occurs!!!!
+  saveSetting();
+});
+
+ipcMain.on(RENDERER_REQ.INIT_SETTING, function() {
+  // Load setting from setting.json
+  let settingFilePath = __base + 'setting.json';
+  let rawSettingContent = fs.readFileSync(settingFilePath);
+  let settingJson = JSON.parse(rawSettingContent);
+  let packet = {compressing: false, dateChanging: false, autoUpdating: false};
+  if (settingJson.compressing === 'true') {
+    packet.compressing = true;
+  }
+  if (settingJson.dateChanging === 'true') {
+    packet.dateChanging = true;
+  }
+  if (settingJson.autoUpdating === 'true') {
+    packet.autoUpdating = true;
+  }
+  replyRendererReq(MAIN_REPLY.INIT_SETTING, packet);
+});
+
+ipcMain.on(RENDERER_REQ.CHECK_UPDATE, function() {
+  autoUpdater.checkForUpdates();
+  console.log('check update~');
 });
 
 ipcMain.on(RENDERER_REQ.ADD_IMG, function(e, packet) {
@@ -165,8 +220,26 @@ ipcMain.on(RENDERER_REQ.CHANGE_SETTING, function(e, packet) {
         setting.pickedDate = new Date(packet.pickedDate);
       }
       break;
+    case 'auto_updating':
+      setting.autoUpdating = packet.option;
+    /*  if (setting.autoUpdating) {
+        autoUpdater.checkForUpdates();
+        console.log('auto_updating is on~');
+      } */
+      break;
   }
   console.log(setting);
+});
+
+autoUpdater.on('checking-for-update', () => {
+  console.log('Checking for update...');
+});
+autoUpdater.on('update-not-available', (info) => {
+  console.log('Update not available.');
+});
+autoUpdater.on('error', (err) => {
+  console.log('error~~~~~');
+  console.log('Error in auto-updater. ' + err);
 });
 
 async function getImageValidity(packet) {
@@ -429,6 +502,7 @@ function replyRendererReq(replyType, packet) {
     case MAIN_REPLY.ADD_IMG.ACCEPTED:
       sendBase64(packet);
       break;
+    case MAIN_REPLY.INIT_SETTING:
     case MAIN_REPLY.ADD_IMG.REJECTED:
     case MAIN_REPLY.DEL_IMG:
     case MAIN_REPLY.GO.PLEASE_CONFIRM:

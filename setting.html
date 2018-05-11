@@ -1,54 +1,56 @@
-  <div class="container">
-    <!-- Page Content goes here -->
-    <div class="row top_padding"></div>
-    <div class="row">
-      <div class="board col s10 offset-s1 z-depth-1">
-         <!-- Switch -->
-          <div class="section">
-            <div class="switch">
-              <h5>壓縮照片</h5>
-              <label>
-                Off
-                <input type="checkbox" class="setting" id="compressing">
-                <span class="lever"></span>
-                On
-              </label>
+<div class="container">
+  <!-- Page Content goes here -->
+  <div class="row top_padding"></div>
+  <div class="row">
+    <div class="board col s10 offset-s1 z-depth-1">
+       <!-- Switch -->
+        <div class="section">
+          <div class="switch">
+            <h5>壓縮照片</h5>
+            <label>
+              Off
+              <input type="checkbox" class="setting" id="compressing">
+              <span class="lever"></span>
+              On
+            </label>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="section">
+          <h5>調整照片日期</h5>
+          <div class="switch">
+            <label>
+              Off
+              <input type="checkbox" class="setting" id="date_changing">
+              <span class="lever"></span>
+              On
+            </label>
+          </div>
+          <div class="row hide" id="container_pickers">
+            <div class="col s6">
+              <label for="id_datepicker">日期</label>
+              <input type="text" class="datepicker" id='id_datepicker'>
+            </div>
+            <div class="col s6">
+              <label for="id_timepicker">時間</label>
+              <input type="text" class="timepicker" id='id_timepicker'>
             </div>
           </div>
-          <div class="divider"></div>
-          <div class="section">
-            <h5>調整照片日期</h5>
-            <div class="switch">
-              <label>
-                Off
-                <input type="checkbox" class="setting" id="date_changing">
-                <span class="lever"></span>
-                On
-              </label>
-            </div>
-            <div class="row hide" id="container_pickers">
-              <div class="col s6">
-                <label for="id_datepicker">日期</label>
-                <input type="text" class="datepicker" id='id_datepicker'>
-              </div>
-              <div class="col s6">
-                <label for="id_timepicker">時間</label>
-                <input type="text" class="timepicker" id='id_timepicker'>
-              </div>
-            </div>
+        </div>
+        <div class="divider"></div>
+        <div class="section">
+          <h5>軟體自動更新(not yet available)</h5>
+          <div class="switch">
+            <label>
+              Off
+              <input type="checkbox" class="setting" id="auto_updating">
+              <span class="lever"></span>
+              On
+            </label>
           </div>
-          <div class="divider"></div>
-          <div class="section">
-            <h5>軟體自動更新(not yet available)</h5>
-            <div class="switch">
-              <label>
-                Off
-                <input type="checkbox">
-                <span class="lever"></span>
-                On
-              </label>
-            </div>
-          </div>
-      </div>
+          <div class="row"></div>
+          <div><a class="waves-effect waves-light btn" id="check_update">檢查更新</a></div>
+        </div>
     </div>
   </div>
+</div>

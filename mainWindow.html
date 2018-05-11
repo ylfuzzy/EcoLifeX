@@ -48,7 +48,9 @@
   <script> 
     // Initialize global variables
     const {ipcRenderer} = require('electron');
-    RENDERER_REQ = {
+    const RENDERER_REQ = {
+      INIT_SETTING: 'REQ:INIT_SETTING',
+      CHECK_UPDATE: 'CHECK_UPDATE',
       ADD_IMG: 'REQ:ADD_IMG',
       DEL_IMG: 'REQ:DEL_IMG',
       GO: {
@@ -57,6 +59,7 @@
         ABORT: 'REPLY:GO:ABORT'},
       CHANGE_SETTING: 'REQ:CHANGE_SETTING'};
     const MAIN_REPLY = {
+      INIT_SETTING: 'REPLY:INIT_SETTING',
       ADD_IMG: {
         ACCEPTED: 'REPLY:ADD_IMG:ACCEPTED',
         REJECTED: 'REPLY:ADD_IMG:REJECTED'},

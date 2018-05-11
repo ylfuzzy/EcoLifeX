@@ -177,6 +177,8 @@ $(document).ready(function() {
   $('#id_timepicker').val(DEFAULT_TIME);
   $('#id_datepicker').keydown(false);
   $('#id_timepicker').keydown(false);
+  
+  ipcRenderer.send(RENDERER_REQ.INIT_SETTING);
 });
 $('.setting').on('click', function() {
   let setting = $(this).attr('id');
@@ -203,6 +205,11 @@ $('.setting').on('click', function() {
     }
   }
   ipcRenderer.send(RENDERER_REQ.CHANGE_SETTING, packet);
+});
+
+$('#check_update').on('click', function() {
+  console.log('check update');
+  ipcRenderer.send(RENDERER_REQ.CHECK_UPDATE);
 });
 
 function deleteAllImages() {
@@ -309,6 +316,19 @@ function getPickedDate() {
   let needsDateChanging = $(this).prop('checked');
   ipcRenderer.send(RENDERER_REQ.OPTIONS.DATE_CHANGING, needsDateChanging);
 }); */
+
+// callback to initlize setting options
+ipcRenderer.on(MAIN_REPLY.INIT_SETTING, function(e, packet) {
+  if (packet.compressing) {
+    $('#compressing').click();
+  }
+  if (packet.dateChanging) {
+    $('#date_changing').click();
+  }
+  if (packet.autoUpdating) {
+    $('#auto_updating').click();
+  }
+});
 
 // callback when main accepted a image
 ipcRenderer.on(MAIN_REPLY.ADD_IMG.ACCEPTED, function(e, packet) {
