@@ -33,6 +33,7 @@
   <div class="modal_content infoupdating"></div>
   <div class="modal_content error"></div>
   <div class="modal_content cancellation"></div>
+  <div class="modal_content autoupdating"></div>
   
   <!-- Insert this line above script imports  -->
   <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
@@ -50,7 +51,9 @@
     const {ipcRenderer} = require('electron');
     const RENDERER_REQ = {
       INIT_SETTING: 'REQ:INIT_SETTING',
-      CHECK_UPDATE: 'CHECK_UPDATE',
+      CHECK_UPDATE: {
+        CHECK: 'REQ:CHECK_UPDATE:CHECK',
+        CONFIRM: 'REQ:CHECK_UPDATE:CONFIRM'},
       ADD_IMG: 'REQ:ADD_IMG',
       DEL_IMG: 'REQ:DEL_IMG',
       GO: {
@@ -60,6 +63,10 @@
       CHANGE_SETTING: 'REQ:CHANGE_SETTING'};
     const MAIN_REPLY = {
       INIT_SETTING: 'REPLY:INIT_SETTING',
+      CHECK_UPDATE: {
+        CHECK: 'REPLY:CHECK_UPDATE:CHECK',
+        NOT_AVAILABLE: 'REPLY:CHECK_UPDATE:NOT_AVAILABLE'
+      },
       ADD_IMG: {
         ACCEPTED: 'REPLY:ADD_IMG:ACCEPTED',
         REJECTED: 'REPLY:ADD_IMG:REJECTED'},
@@ -85,6 +92,7 @@
       $('.modal_content.infoupdating').load('model_html/infoupdatingModal.html');
       $('.modal_content.error').load('model_html/errorModal.html');
       $('.modal_content.cancellation').load('model_html/cancellationModal.html');
+      $('.modal_content.autoupdating').load('model_html/autoupdatingModal.html');
       
       // Load global vars
       /* var renderGlobalVar = 'js/renderer/renderGlobalVar.js';

@@ -10,7 +10,9 @@ const ImagesContainer = require(__base + 'js/utility/imagesContainer');
 const ImagesProcessor = require(__base + 'js/utility/imagesProcessor');
 const RENDERER_REQ = {
   INIT_SETTING: 'REQ:INIT_SETTING',
-  CHECK_UPDATE: 'CHECK_UPDATE',
+  CHECK_UPDATE: {
+    CHECK: 'REQ:CHECK_UPDATE:CHECK',
+    CONFIRM: 'REQ:CHECK_UPDATE:CONFIRM'},
   ADD_IMG: 'REQ:ADD_IMG',
   DEL_IMG: 'REQ:DEL_IMG',
   GO: {
@@ -20,6 +22,10 @@ const RENDERER_REQ = {
   CHANGE_SETTING: 'REQ:CHANGE_SETTING'};
 const MAIN_REPLY = {
   INIT_SETTING: 'REPLY:INIT_SETTING',
+  CHECK_UPDATE: {
+    CHECK: 'REPLY:CHECK_UPDATE:CHECK',
+    NOT_AVAILABLE: 'REPLY:CHECK_UPDATE:NOT_AVAILABLE'
+  },
   ADD_IMG: {
     ACCEPTED: 'REPLY:ADD_IMG:ACCEPTED',
     REJECTED: 'REPLY:ADD_IMG:REJECTED'},
@@ -33,6 +39,7 @@ const MAIN_REPLY = {
 const {app, BrowserWindow, ipcMain, dialog} = electron;
 const {autoUpdater} = require("electron-updater");
 autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = false;
 autoUpdater.logger = require("electron-log")
 autoUpdater.logger.transports.file.level = "info"
 
@@ -118,9 +125,23 @@ ipcMain.on(RENDERER_REQ.INIT_SETTING, function() {
   replyRendererReq(MAIN_REPLY.INIT_SETTING, packet);
 });
 
-ipcMain.on(RENDERER_REQ.CHECK_UPDATE, function() {
+ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CHECK, function() {
   autoUpdater.checkForUpdates();
   console.log('check update~');
+});
+
+ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CONFIRM, function(e, packet) {
+  let packetToReply = {title: '處理中...', showCancelBtn: false, showConfirmBtn: false, showCircle: true, showProgress: false};
+  replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packetToReply);
+  switch (packet.type) {
+    case 'download':
+      autoUpdater.downloadUpdate();
+      break;
+    case 'update':
+      autoUpdater.quitAndInstall(false, false);
+      console.log('quit and update');
+      break;
+  } 
 });
 
 ipcMain.on(RENDERER_REQ.ADD_IMG, function(e, packet) {
@@ -222,20 +243,39 @@ ipcMain.on(RENDERER_REQ.CHANGE_SETTING, function(e, packet) {
       break;
     case 'auto_updating':
       setting.autoUpdating = packet.option;
-    /*  if (setting.autoUpdating) {
-        autoUpdater.checkForUpdates();
-        console.log('auto_updating is on~');
-      } */
       break;
   }
   console.log(setting);
 });
 
 autoUpdater.on('checking-for-update', () => {
+  let packet = {title: '檢查更新中...', showCancelBtn: false, showConfirmBtn: false, showCircle: true, showProgress: false};
+  replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
   console.log('Checking for update...');
 });
+autoUpdater.on('update-available', (info) => {
+  let packet = {title: '有可用更新，是否立即下載？', showCancelBtn: true, showConfirmBtn: true, showCircle: false, showProgress: false, type: 'download'};
+  replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
+  console.log('Update available.', info);
+});
+autoUpdater.on('download-progress', (progressObj) => {
+  let log_message = "Download speed: " + progressObj.bytesPerSecond;
+  log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+  log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+  let percent = Math.floor(progressObj.percent).toString() + '%';
+  let packet = {title: '正在下載更新', showCancelBtn: false, showConfirmBtn: false, showCircle: false, showProgress: true, progressPercent: percent};
+  replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
+  console.log(log_message);
+});
+autoUpdater.on('update-downloaded', (info) => {
+  let packet = {title: '下載完畢，是否立即更新？', showCancelBtn: true, showConfirmBtn: true, showCircle: false, showProgress: true, progressPercent: '100%', type: 'update'};
+  replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
+  console.log('Update downloaded');
+});
 autoUpdater.on('update-not-available', (info) => {
-  console.log('Update not available.');
+  let packet = {title: '沒有可用更新', showCancelBtn: true, showConfirmBtn: false, showCircle: false, showProgress: false};
+  replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
+  console.log('Update not available.', info);
 });
 autoUpdater.on('error', (err) => {
   console.log('error~~~~~');
@@ -503,12 +543,11 @@ function replyRendererReq(replyType, packet) {
       sendBase64(packet);
       break;
     case MAIN_REPLY.INIT_SETTING:
+    case MAIN_REPLY.CHECK_UPDATE.CHECK:
     case MAIN_REPLY.ADD_IMG.REJECTED:
     case MAIN_REPLY.DEL_IMG:
     case MAIN_REPLY.GO.PLEASE_CONFIRM:
     case MAIN_REPLY.GO.REJECTED:
-      mainWindow.webContents.send(replyType, packet);
-      break;
     case MAIN_REPLY.GO.ERROR:
       mainWindow.webContents.send(replyType, packet);
       break;

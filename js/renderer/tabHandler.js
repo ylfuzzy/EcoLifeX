@@ -209,7 +209,63 @@ $('.setting').on('click', function() {
 
 $('#check_update').on('click', function() {
   console.log('check update');
-  ipcRenderer.send(RENDERER_REQ.CHECK_UPDATE);
+  ipcRenderer.send(RENDERER_REQ.CHECK_UPDATE.CHECK);
+});
+
+ipcRenderer.on(MAIN_REPLY.CHECK_UPDATE.CHECK, function(e, packet) {
+  console.log('try open autoupdating model');
+  showAutoUpdatingModal(packet);
+});
+
+function showAutoUpdatingModal(packet) {
+  let data_hasTurnedOn = $('#autoupdating_modal').data('hasTurnedOn');
+  let hasTurnedOn = (typeof data_hasTurnedOn === 'undefined') ? false : data_hasTurnedOn;
+  if (!hasTurnedOn) {
+    $('#autoupdating_modal').modal({
+      dismissible: false, // Modal cannot be dismissed by clicking outside of the modal
+      complete: function() { // Callback for Modal close
+        $('#autoupdating_modal').data('hasTurnedOn', false);
+
+        // buttons
+        /* $('#infoupdating_modal_cancel_btn').removeClass('hide');//.css('display', '');
+        $('#infoupdating_modal_confirm_btn').addClass('hide');//.css('display', 'none'); */
+      }
+    });
+    $('#autoupdating_modal').modal('open');
+    $('#autoupdating_modal').data('hasTurnedOn', true);
+  }
+  $('#autoupdating_modal .indicator .title').empty();
+  $('#autoupdating_modal .indicator .title').append('<h5>' + packet.title + '</h5>');
+  if (packet.showCircle) {
+    $('#autoupdating_modal .circle_preloader').removeClass('hide');
+  } else {
+    $('#autoupdating_modal .circle_preloader').addClass('hide');
+  }
+  if (packet.showProgress) {
+    $('#autoupdating_modal .download_indicator').removeClass('hide');
+    $('#autoupdating_modal .determinate').css('width', packet.progressPercent);
+    $('#autoupdating_modal .fraction').empty();
+    $('#autoupdating_modal .fraction').append(packet.progressPercent);
+  } else {
+    $('#autoupdating_modal .download_indicator').addClass('hide');
+  }
+  if (packet.showCancelBtn) {
+    $('#autoupdating_modal_cancel_btn').removeClass('hide');
+  } else {
+    $('#autoupdating_modal_cancel_btn').addClass('hide');
+  }
+  if (packet.showConfirmBtn) {
+    $('#autoupdating_modal_confirm_btn').data('type', packet.type);
+    $('#autoupdating_modal_confirm_btn').removeClass('hide');
+  } else {
+    $('#autoupdating_modal_confirm_btn').addClass('hide');
+  }
+}
+
+$('#autoupdating_modal_confirm_btn').on('click', function() {
+  console.log('confirm');
+  packet = {type: $('#autoupdating_modal_confirm_btn').data('type')};
+  ipcRenderer.send(RENDERER_REQ.CHECK_UPDATE.CONFIRM, packet);
 });
 
 function deleteAllImages() {
