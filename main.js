@@ -42,6 +42,7 @@ autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = false;
 autoUpdater.logger = require("electron-log")
 autoUpdater.logger.transports.file.level = "info"
+const settingJsonPath = path.join(app.getPath('userData'), 'setting.json');
 
 let mainWindow;
 let imagesContainer = new ImagesContainer();
@@ -60,8 +61,7 @@ function saveSetting() {
     settingToSave.autoUpdating = 'true';  
   }
   let data = JSON.stringify(settingToSave, null, 2);
-
-  fs.writeFile('setting.json', data, (err) => {
+  fs.writeFile(settingJsonPath, data, (err) => {
       if (err) throw err;
       console.log('Data written to file');
   });
@@ -109,20 +109,30 @@ app.on('before-quit', function(e) {
 
 ipcMain.on(RENDERER_REQ.INIT_SETTING, function() {
   // Load setting from setting.json
-  let settingFilePath = __base + 'setting.json';
-  let rawSettingContent = fs.readFileSync(settingFilePath);
-  let settingJson = JSON.parse(rawSettingContent);
-  let packet = {compressing: false, dateChanging: false, autoUpdating: false};
-  if (settingJson.compressing === 'true') {
-    packet.compressing = true;
-  }
-  if (settingJson.dateChanging === 'true') {
-    packet.dateChanging = true;
-  }
-  if (settingJson.autoUpdating === 'true') {
-    packet.autoUpdating = true;
-  }
-  replyRendererReq(MAIN_REPLY.INIT_SETTING, packet);
+  console.log('dataPath: ', settingJsonPath);
+  //let settingFilePath = __base + 'setting.json';
+  fs.readFile(settingJsonPath, function(err, rawSettingContent) {
+    let packet = {compressing: false, dateChanging: false, autoUpdating: false};
+    if (err) {
+      // setting.json doesn't exist, using default setting (turn on all options)
+      packet.compressing = true;
+      packet.dateChanging = true;
+      packet.autoUpdating = true;
+    } else {
+      // setting.json exists
+      let settingJson = JSON.parse(rawSettingContent);
+      if (settingJson.compressing === 'true') {
+        packet.compressing = true;
+      }
+      if (settingJson.dateChanging === 'true') {
+        packet.dateChanging = true;
+      }
+      if (settingJson.autoUpdating === 'true') {
+        packet.autoUpdating = true;
+      }
+    }
+    replyRendererReq(MAIN_REPLY.INIT_SETTING, packet);
+  });
 });
 
 ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CHECK, function() {
