@@ -1,8 +1,10 @@
+const path = require('path');
 const fastExif = require('fast-exif');
-const piexif = require('./piexif.js');
+const piexif = require(path.normalize(__base + 'js/utility/piexif.js'));
 const sharp = require('sharp');
 const fs = require('fs');
-const MODIFIED_IMGS_FOLDER_PATH = __base + 'modifiedImgs/';
+const {app} = require('electron');
+const MODIFIED_IMGS_FOLDER_PATH = path.normalize(app.getPath('userData') + '/modifiedImgs/');
 
 class ImagesProcessor {
   static async isValidImage(comparedInfo) {

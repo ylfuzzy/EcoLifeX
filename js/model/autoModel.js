@@ -1,9 +1,10 @@
-const ImagesProcessor = require(__base + 'js/utility/imagesProcessor');
+const path = require('path');
+const ImagesProcessor = require(path.normalize(__base + 'js/utility/imagesProcessor'));
 const {Builder, Capabilities, By, Key, until} = require('selenium-webdriver');
-const SeleniumError = require('selenium-webdriver/lib/error');
-const chrome = require('selenium-webdriver/chrome');
-const path = __base + 'js/model/chromedriver.exe';//'node_modules/.bin/chromedriver'
-const service = new chrome.ServiceBuilder(path).build();
+const SeleniumError = require(path.normalize('selenium-webdriver/lib/error'));
+const chrome = require(path.normalize('selenium-webdriver/chrome'));
+const chromedriverPath = path.normalize(__base + 'resource/chromedriver.exe').replace('app.asar', 'app.asar.unpacked'); 
+const service = new chrome.ServiceBuilder(chromedriverPath).build();
 chrome.setDefaultService(service);
 /* const options = new chrome.Options().headless();
 options.windowSize({width: 1270, height: 720});
@@ -24,13 +25,13 @@ const CURRENT_DATE = new Date(new Date().getTime() + 8 * 60 * 60 * 1000);
 let driver;
 class AutoModel {
   /* constructor() {
-    //console.log(path);
+    //console.log(chromedriverPath);
     //driver = new Builder().withCapabilities(Capabilities.chrome()).build();
   } */
 
   async initChromeDriver() {
     try {
-      console.log('chromedriver path: ' + path);
+      console.log('chromedriver chromedriverPath: ' + chromedriverPath);
       driver = await new Builder().withCapabilities(Capabilities.chrome()).build();
     } catch (err) {
       throw err;

@@ -5,9 +5,17 @@ const url = require('url');
 const path = require('path');
 const {exec} = require('child_process');
 const sharp = require('sharp');
-const AutoModel = require(__base + 'js/model/autoModel');
-const ImagesContainer = require(__base + 'js/utility/imagesContainer');
-const ImagesProcessor = require(__base + 'js/utility/imagesProcessor');
+const AutoModel = require(path.normalize(__base + 'js/model/autoModel'));
+const ImagesContainer = require(path.normalize(__base + 'js/utility/imagesContainer'));
+const ImagesProcessor = require(path.normalize(__base + 'js/utility/imagesProcessor'));
+const {app, BrowserWindow, ipcMain, dialog} = electron;
+const {autoUpdater} = require("electron-updater");
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = false;
+autoUpdater.logger = require("electron-log")
+autoUpdater.logger.transports.file.level = "info"
+const SETTING_JSON_PATH = path.normalize(app.getPath('userData') + '/setting.json');//path.join(__userbase, 'setting.json');
+const MODIFIED_IMGS_FOLDER_PATH = path.normalize(app.getPath('userData') + '/modifiedImgs/');
 const RENDERER_REQ = {
   INIT_SETTING: 'REQ:INIT_SETTING',
   CHECK_UPDATE: {
@@ -36,17 +44,11 @@ const MAIN_REPLY = {
     UPDATE_AUTOPROCESS_INFO: 'REPLY:GO:UPDATE_AUTOPROCESS_INFO',
     ERROR: 'REPLY:GO:ERROR'}
 };
-const {app, BrowserWindow, ipcMain, dialog} = electron;
-const {autoUpdater} = require("electron-updater");
-autoUpdater.autoDownload = false;
-autoUpdater.autoInstallOnAppQuit = false;
-autoUpdater.logger = require("electron-log")
-autoUpdater.logger.transports.file.level = "info"
-const settingJsonPath = path.join(app.getPath('userData'), 'setting.json');
 
 let mainWindow;
 let imagesContainer = new ImagesContainer();
 let setting = {compressing: false, dateChanging: false, pickedDate: undefined, autoUpdating: false};
+let updateCheckTriggeredByUser;
 
 // Save user setting
 function saveSetting() {
@@ -61,7 +63,7 @@ function saveSetting() {
     settingToSave.autoUpdating = 'true';  
   }
   let data = JSON.stringify(settingToSave, null, 2);
-  fs.writeFile(settingJsonPath, data, (err) => {
+  fs.writeFile(SETTING_JSON_PATH, data, (err) => {
       if (err) throw err;
       console.log('Data written to file');
   });
@@ -69,6 +71,8 @@ function saveSetting() {
 
 // Listen for app to be ready
 app.on('ready', function() {
+  let chromedriverPath = 'resource' + path.sep + 'chromedriver.exe';
+  console.log('unpackTest: ', path.join(__dirname, chromedriverPath).replace('app.asar', 'app.asar.unpacked'));
   // Create new window
   mainWindow = new BrowserWindow({});
 
@@ -85,10 +89,8 @@ app.on('ready', function() {
   });
 
   // Create modifiedImgs folder if necessary
-  let folderName =  'modifiedImgs';
-  let dirPath = __base + folderName;
-  if (!fs.existsSync(dirPath)){
-    fs.mkdirSync(dirPath);
+  if (!fs.existsSync(MODIFIED_IMGS_FOLDER_PATH)){
+    fs.mkdirSync(MODIFIED_IMGS_FOLDER_PATH);
   }
 });
 
@@ -109,10 +111,10 @@ app.on('before-quit', function(e) {
 
 ipcMain.on(RENDERER_REQ.INIT_SETTING, function() {
   // Load setting from setting.json
-  console.log('dataPath: ', settingJsonPath);
+  console.log('dataPath: ', SETTING_JSON_PATH);
   //let settingFilePath = __base + 'setting.json';
-  fs.readFile(settingJsonPath, function(err, rawSettingContent) {
-    let packet = {compressing: false, dateChanging: false, autoUpdating: false};
+  fs.readFile(SETTING_JSON_PATH, function(err, rawSettingContent) {
+    let packet = {compressing: false, dateChanging: false, autoUpdating: false, version: app.getVersion()};
     if (err) {
       // setting.json doesn't exist, using default setting (turn on all options)
       packet.compressing = true;
@@ -131,11 +133,18 @@ ipcMain.on(RENDERER_REQ.INIT_SETTING, function() {
         packet.autoUpdating = true;
       }
     }
+    if (packet.autoUpdating) {
+      updateCheckTriggeredByUser = false;
+      autoUpdater.checkForUpdates();
+      console.log('auto check update');
+    }
+    console.log('current version: ', packet.version);
     replyRendererReq(MAIN_REPLY.INIT_SETTING, packet);
   });
 });
 
 ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CHECK, function() {
+  updateCheckTriggeredByUser = true;
   autoUpdater.checkForUpdates();
   console.log('check update~');
 });
@@ -259,9 +268,11 @@ ipcMain.on(RENDERER_REQ.CHANGE_SETTING, function(e, packet) {
 });
 
 autoUpdater.on('checking-for-update', () => {
-  let packet = {title: '檢查更新中...', showCancelBtn: false, showConfirmBtn: false, showCircle: true, showProgress: false};
-  replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
-  console.log('Checking for update...');
+  if (updateCheckTriggeredByUser) {
+    let packet = {title: '檢查更新中...', showCancelBtn: false, showConfirmBtn: false, showCircle: true, showProgress: false};
+    replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
+    console.log('Checking for update...');
+  }
 });
 autoUpdater.on('update-available', (info) => {
   let packet = {title: '有可用更新，是否立即下載？', showCancelBtn: true, showConfirmBtn: true, showCircle: false, showProgress: false, type: 'download'};
@@ -283,11 +294,15 @@ autoUpdater.on('update-downloaded', (info) => {
   console.log('Update downloaded');
 });
 autoUpdater.on('update-not-available', (info) => {
-  let packet = {title: '沒有可用更新', showCancelBtn: true, showConfirmBtn: false, showCircle: false, showProgress: false};
-  replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
-  console.log('Update not available.', info);
+  if (updateCheckTriggeredByUser) {
+    let packet = {title: '沒有可用更新', showCancelBtn: true, showConfirmBtn: false, showCircle: false, showProgress: false};
+    replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
+    console.log('Update not available.', info);
+  }
 });
 autoUpdater.on('error', (err) => {
+  let packet = {title: '檢查更新發生錯誤！', showCancelBtn: true, showConfirmBtn: false, showCircle: false, showProgress: false};
+  replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
   console.log('error~~~~~');
   console.log('Error in auto-updater. ' + err);
 });

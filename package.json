@@ -26,7 +26,8 @@
   },
   "build": {
     "appId": "xyz.bartzutow.ecolifex",
-    "asar": "false",
+    "asar": "true",
+    "asarUnpack": ["resource/chromedriver.exe"],
     "win": {
       "target": "nsis"
     },

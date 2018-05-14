@@ -1,4 +1,5 @@
-const ImagesProcessor = require(__base + 'js/utility/imagesProcessor');
+const path = require('path');
+const ImagesProcessor = require(path.normalize(__base + 'js/utility/imagesProcessor'));
 
 class ImageData {
   /* constructor() {

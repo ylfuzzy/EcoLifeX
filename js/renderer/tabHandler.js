@@ -375,6 +375,8 @@ function getPickedDate() {
 
 // callback to initlize setting options
 ipcRenderer.on(MAIN_REPLY.INIT_SETTING, function(e, packet) {
+  let headerText = '自動檢查更新' + '(目前版本: v ' + packet.version + ')';
+  $('#header_check_update').text(headerText);
   if (packet.compressing) {
     $('#compressing').click();
   }
@@ -539,6 +541,7 @@ function showInfoupdatingModal(packet) {
   //now you can open modal from code
   if (!hasTurnedOn) {
     $('#infoupdating_modal_confirm_btn').addClass('hide');
+    $('.cancel_reconfirm').addClass('hide');
     $('#infoupdating_modal').modal('open');
     $('#infoupdating_modal').data('hasTurnedOn', true);
   }
