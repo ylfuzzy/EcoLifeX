@@ -9,18 +9,20 @@ const AutoModel = require(path.normalize(__base + 'js/model/autoModel'));
 const ImagesContainer = require(path.normalize(__base + 'js/utility/imagesContainer'));
 const ImagesProcessor = require(path.normalize(__base + 'js/utility/imagesProcessor'));
 const {app, BrowserWindow, ipcMain, dialog} = electron;
-const {autoUpdater} = require("electron-updater");
+const {autoUpdater, CancellationToken} = require('electron-updater');
+const cancellationToken = new CancellationToken();
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = false;
-autoUpdater.logger = require("electron-log")
-autoUpdater.logger.transports.file.level = "info"
+autoUpdater.logger = require('electron-log');
+autoUpdater.logger.transports.file.level = 'info';
 const SETTING_JSON_PATH = path.normalize(app.getPath('userData') + '/setting.json');//path.join(__userbase, 'setting.json');
 const MODIFIED_IMGS_FOLDER_PATH = path.normalize(app.getPath('userData') + '/modifiedImgs/');
 const RENDERER_REQ = {
   INIT_SETTING: 'REQ:INIT_SETTING',
   CHECK_UPDATE: {
     CHECK: 'REQ:CHECK_UPDATE:CHECK',
-    CONFIRM: 'REQ:CHECK_UPDATE:CONFIRM'},
+    CONFIRM: 'REQ:CHECK_UPDATE:CONFIRM',
+    ABORT_DOWNLOAD: 'REQ:CHECK_UPDATE:ABORT_DOWNLOAD'},
   ADD_IMG: 'REQ:ADD_IMG',
   DEL_IMG: 'REQ:DEL_IMG',
   GO: {
@@ -49,6 +51,7 @@ let mainWindow;
 let imagesContainer = new ImagesContainer();
 let setting = {compressing: false, dateChanging: false, pickedDate: undefined, autoUpdating: false};
 let updateCheckTriggeredByUser;
+let downloadAbortByUser;
 
 // Save user setting
 function saveSetting() {
@@ -71,8 +74,8 @@ function saveSetting() {
 
 // Listen for app to be ready
 app.on('ready', function() {
-  let chromedriverPath = 'resource' + path.sep + 'chromedriver.exe';
-  console.log('unpackTest: ', path.join(__dirname, chromedriverPath).replace('app.asar', 'app.asar.unpacked'));
+  /* let chromedriverPath = 'resource' + path.sep + 'chromedriver.exe';
+  console.log('chromedriver path: ', path.join(__dirname, chromedriverPath).replace('app.asar', 'app.asar.unpacked')); */
   // Create new window
   mainWindow = new BrowserWindow({});
 
@@ -84,7 +87,7 @@ app.on('ready', function() {
   }));
 
   mainWindow.on('closed', function() {
-    console.log('closed!!!!!~~~~~~');
+    console.log('app quit');
     app.quit();
   });
 
@@ -95,7 +98,7 @@ app.on('ready', function() {
 });
 
 app.on('before-quit', function(e) {
-  console.log('app quits');
+  console.log('app is going to quit');
   //e.preventDefault();
   ImagesProcessor.deleteModifiedImages();
   let cmd_killChromeDriverExe = 'taskkill /im chromedriver.exe /f';
@@ -111,7 +114,7 @@ app.on('before-quit', function(e) {
 
 ipcMain.on(RENDERER_REQ.INIT_SETTING, function() {
   // Load setting from setting.json
-  console.log('dataPath: ', SETTING_JSON_PATH);
+  console.log('SETTING_JSON_PATH: ', SETTING_JSON_PATH);
   //let settingFilePath = __base + 'setting.json';
   fs.readFile(SETTING_JSON_PATH, function(err, rawSettingContent) {
     let packet = {compressing: false, dateChanging: false, autoUpdating: false, version: app.getVersion()};
@@ -145,6 +148,7 @@ ipcMain.on(RENDERER_REQ.INIT_SETTING, function() {
 
 ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CHECK, function() {
   updateCheckTriggeredByUser = true;
+  downloadAbortByUser = false;
   autoUpdater.checkForUpdates();
   console.log('check update~');
 });
@@ -154,13 +158,18 @@ ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CONFIRM, function(e, packet) {
   replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packetToReply);
   switch (packet.type) {
     case 'download':
-      autoUpdater.downloadUpdate();
+      autoUpdater.downloadUpdate(cancellationToken);
       break;
     case 'update':
       autoUpdater.quitAndInstall(false, false);
       console.log('quit and update');
       break;
   } 
+});
+
+ipcMain.on(RENDERER_REQ.CHECK_UPDATE.ABORT_DOWNLOAD, function() {
+  downloadAbortByUser = true;
+  cancellationToken.cancel();
 });
 
 ipcMain.on(RENDERER_REQ.ADD_IMG, function(e, packet) {
@@ -275,7 +284,7 @@ autoUpdater.on('checking-for-update', () => {
   }
 });
 autoUpdater.on('update-available', (info) => {
-  let packet = {title: '有可用更新，是否立即下載？', showCancelBtn: true, showConfirmBtn: true, showCircle: false, showProgress: false, type: 'download'};
+  let packet = {title: '有可用更新，是否立即下載？', showCancelBtn: true, showAbortBtn: false, showConfirmBtn: true, showCircle: false, showProgress: false, type: 'download'};
   replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
   console.log('Update available.', info);
 });
@@ -284,27 +293,29 @@ autoUpdater.on('download-progress', (progressObj) => {
   log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
   log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
   let percent = Math.floor(progressObj.percent).toString() + '%';
-  let packet = {title: '正在下載更新', showCancelBtn: false, showConfirmBtn: false, showCircle: false, showProgress: true, progressPercent: percent};
+  let packet = {title: '正在下載更新', showCancelBtn: false, showAbortBtn: true, showConfirmBtn: false, showCircle: false, showProgress: true, progressPercent: percent};
   replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
   console.log(log_message);
 });
 autoUpdater.on('update-downloaded', (info) => {
-  let packet = {title: '下載完畢，是否立即更新？', showCancelBtn: true, showConfirmBtn: true, showCircle: false, showProgress: true, progressPercent: '100%', type: 'update'};
+  let packet = {title: '下載完畢，是否立即更新？', showCancelBtn: true, showAbortBtn: false, showConfirmBtn: true, showCircle: false, showProgress: true, progressPercent: '100%', type: 'update'};
   replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
   console.log('Update downloaded');
 });
 autoUpdater.on('update-not-available', (info) => {
   if (updateCheckTriggeredByUser) {
-    let packet = {title: '沒有可用更新', showCancelBtn: true, showConfirmBtn: false, showCircle: false, showProgress: false};
+    let packet = {title: '沒有可用更新', showCancelBtn: true, showAbortBtn: false, showConfirmBtn: false, showCircle: false, showProgress: false};
     replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
     console.log('Update not available.', info);
   }
 });
 autoUpdater.on('error', (err) => {
-  let packet = {title: '檢查更新發生錯誤！', showCancelBtn: true, showConfirmBtn: false, showCircle: false, showProgress: false};
-  replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
-  console.log('error~~~~~');
-  console.log('Error in auto-updater. ' + err);
+  if (!downloadAbortByUser) {
+    let packet = {title: '檢查更新發生錯誤！', showCancelBtn: true, showAbortBtn: false, showConfirmBtn: false, showCircle: false, showProgress: false};
+    replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
+    console.log('error~~~~~');
+    console.log('Error in auto-updater. ' + err);
+  }
 });
 
 async function getImageValidity(packet) {

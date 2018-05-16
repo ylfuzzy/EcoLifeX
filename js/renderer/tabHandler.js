@@ -212,6 +212,10 @@ $('#check_update').on('click', function() {
   ipcRenderer.send(RENDERER_REQ.CHECK_UPDATE.CHECK);
 });
 
+$('#autoupdating_modal_abort_btn').on('click', function() {
+  ipcRenderer.send(RENDERER_REQ.CHECK_UPDATE.ABORT_DOWNLOAD);
+});
+
 ipcRenderer.on(MAIN_REPLY.CHECK_UPDATE.CHECK, function(e, packet) {
   console.log('try open autoupdating model');
   showAutoUpdatingModal(packet);
@@ -253,6 +257,11 @@ function showAutoUpdatingModal(packet) {
     $('#autoupdating_modal_cancel_btn').removeClass('hide');
   } else {
     $('#autoupdating_modal_cancel_btn').addClass('hide');
+  }
+  if (packet.showAbortBtn) {
+    $('#autoupdating_modal_abort_btn').removeClass('hide');
+  } else {
+    $('#autoupdating_modal_abort_btn').addClass('hide');
   }
   if (packet.showConfirmBtn) {
     $('#autoupdating_modal_confirm_btn').data('type', packet.type);
@@ -375,7 +384,7 @@ function getPickedDate() {
 
 // callback to initlize setting options
 ipcRenderer.on(MAIN_REPLY.INIT_SETTING, function(e, packet) {
-  let headerText = '自動檢查更新' + '(目前版本: v ' + packet.version + ')';
+  let headerText = '自動檢查更新' + '(目前版本: v' + packet.version + ')';
   $('#header_check_update').text(headerText);
   if (packet.compressing) {
     $('#compressing').click();
