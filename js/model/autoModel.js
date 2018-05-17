@@ -450,7 +450,7 @@ class AutoModel {
       await this.__goToPublishPage(isForCleanUp);
       await this.__selectTimeRange(imageSet, isForCleanUp);
       await this.__selectRoute();
-      await this.__clickJournalCreationButton(isForCleanUp);
+      await this.__clickJournalCreationButton(imageSet, isForCleanUp);
     } catch (errFromOrigin) {
       throw errFromOrigin;
     }
@@ -517,7 +517,7 @@ class AutoModel {
     }
   }
 
-  async __clickJournalCreationButton(isForCleanUp) {
+  async __clickJournalCreationButton(imageSet, isForCleanUp) {
     let timeout = 5000;
     try {
       let id_btn_createJournal = 'cphMain_btnOk';
@@ -528,13 +528,13 @@ class AutoModel {
 
       // If the date is a week before the current date
 		  // there will be another popup alert.
-      if (!isForCleanUp) {
+      if (!isForCleanUp && !ImagesProcessor.withinFiveDays(imageSet, CURRENT_DATE)) {
         try {
           /* alert = await driver.wait(until.alertIsPresent(), timeout);
           await alert.accept(); */
           await this.__acceptAlertAndGetText();
         } catch (err) {
-          console.log('Since images are not taken a week before today, there is no another alert');
+          console.log('Since images are taken within 7 days, there is no another alert');
         }
       }
     } catch (err) {

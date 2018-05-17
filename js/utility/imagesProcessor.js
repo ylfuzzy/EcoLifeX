@@ -16,7 +16,7 @@ class ImagesProcessor {
           console.log('asdfsdfsfs');
           let newImgExif = await fastExif.read(comparedInfo.newImgPath);
 
-          // Check whether this new image's exif exists DateTimeOrigianl
+          // Check whether the DateTimeOriginal exists in this new image's exif
           // If it does not exist, the line below will throw a error
           newImgExif.exif.DateTimeOriginal.getTime();
           imgInfo.dateTimeOriginal = newImgExif.exif.DateTimeOriginal;
@@ -89,7 +89,6 @@ class ImagesProcessor {
         let imgName = new Date().getTime().toString() + '.jpg';
         let outputPath = this.__writeJpgToModifiedImgsFolder(imgName, jpgBinary);
         if (fs.existsSync(outputPath)) {
-          console.log('heeeeeeee');
           uploadingPath = outputPath;
           let newImgExif = await fastExif.read(uploadingPath);
           console.log(newImgExif);
@@ -99,9 +98,20 @@ class ImagesProcessor {
       let packet = {imgPath: uploadingPath, dateTimeOriginal: dateTimeOriginal};
       imageData.addUploadingData(packet);
     } catch (err) {
-      console.log('heeeeeeeeeeelooooooooooo');
       console.log(err);
     }
+  }
+
+  static withinFiveDays(imageSet, currentTime) {
+    let fiveDaysInMillisecs = 5 * 24 * 60 * 60 * 1000;
+    let earlyTime = imageSet.clean.dateTimeOriginal;
+    let laterTime = imageSet.dirty.dateTimeOriginal;
+    if (earlyTime > laterTime) {
+      let tempTime = earlyTime;
+      earlyTime = laterTime;
+      laterTime = tempTime;
+    }
+    return (currentTime.getTime() - earlyTime.getTime() <= fiveDaysInMillisecs);
   }
 
   static async __getModifiedJpgBinary(imgPath, setting) {
