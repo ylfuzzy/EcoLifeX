@@ -33,7 +33,7 @@ You should only download "ecolifex-Setup-x.x.x.exe". Other files are not require
 * [Electron](https://electronjs.org/) - The framework for creating Desktop App with web technologies
 * [Selenium](https://www.seleniumhq.org/) The module for browser automation
 * [sharp](http://sharp.dimens.io/en/stable/) - The Node.js images processing module
-* [fas-exif](https://www.npmjs.com/package/fast-exif) - The light weight Node.js module for extracting images' exif
+* [fast-exif](https://www.npmjs.com/package/fast-exif) - The light weight Node.js module for extracting images' exif
 * [piexif](http://piexifjs.readthedocs.io/en/latest/) - The JavaScript API for editing images' exif 
 
 ## Versioning
