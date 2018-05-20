@@ -1,12 +1,12 @@
 # EcoLifeX
 
-EcoLifeX, an evolutionary version of QuickEcoLife, is a customized Desktop App specially written to reduce unnecessary workload of the staffs at the Eastern District Office.
+EcoLifeX, an evolutionary version of QuickEcoLife, is a customized Desktop App specially written for the civil servants at the Eastern District Office, whose purpose is to reduce their unnecessary workload.
 
-When I served in the mandatory substitute service for one year at the Office, I found the Office's managers insanely desired "to be prominent" in the annual Government Performance Review. In order to be "eye-catching", they forced their staffs to deliberately do a lot of flattering tasks, all of which were superfical, tedious, and meaningless. Their only purpose was to attract evaluation committee's attention.
+When I served in the mandatory substitute service for one year at the Office, I found the Office's managers insanely desired "to be prominent" in the annual Government Performance Review. In order to be "eye-catching", they forced the staff to deliberately do a lot of flattering tasks, all of which were superfical, tedious, and meaningless. Their only purpose was to attract evaluation committee's attention.
 
-Among these flattering tasks, one requires the staffs to "accidentally" find trashes on the streets, pick them off the ground on purpose while recording the entire staged scenario by photos, and then upload them to an official website called "ecolife". To make matters worse, due to bad webiste designs, manually uploading photos to ecolife is extremely time consumming.
+Among these flattering tasks, one requires the staff to "accidentally" find trashes on the streets, pick them off the ground on purpose while recording the entire staged scenario by photos, and then upload them to an official website called "ecolife". To make matters worse, due to bad webiste designs, manually uploading photos to ecolife is extremely time consumming.
 
-Fortunately, the uploading process is a very routine operation and can be swiftly done by a computer program. Therefore, I decided to write a user friendly software - EcoLifeX - automatically uploading photos for my former colleages. I hope it could relieve their heavy burdens.
+Fortunately, the uploading process is a very routine operation and can be swiftly done by a computer program. Therefore, I decided to write a user friendly software - EcoLifeX - automatically uploading photos for the staff, my former colleages. I hope it could relieve their heavy burdens.
 
 ## Installing
 
