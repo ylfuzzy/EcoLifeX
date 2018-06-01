@@ -10,7 +10,7 @@ const ImagesContainer = require(path.normalize(__base + 'js/utility/imagesContai
 const ImagesProcessor = require(path.normalize(__base + 'js/utility/imagesProcessor'));
 const {app, BrowserWindow, ipcMain, dialog} = electron;
 const {autoUpdater, CancellationToken} = require('electron-updater');
-const cancellationToken = new CancellationToken();
+//const cancellationToken = new CancellationToken();
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = false;
 autoUpdater.logger = require('electron-log');
@@ -50,26 +50,17 @@ const MAIN_REPLY = {
 let mainWindow;
 let imagesContainer = new ImagesContainer();
 let setting = {compressing: false, dateChanging: false, pickedDate: undefined, autoUpdating: false};
+let cancellationToken;
 let updateCheckTriggeredByUser;
+let updateTriggered = false
 let downloadAbortByUser;
 
 // Save user setting
 function saveSetting() {
-  let settingToSave = {compressing: 'false', dateChanging: 'fasle', autoUpdating: 'false'};
-  if (setting.compressing) {
-    settingToSave.compressing = 'true';  
-  }
-  if (setting.dateChanging) {
-    settingToSave.dateChanging = 'true';  
-  }
-  if (setting.autoUpdating) {
-    settingToSave.autoUpdating = 'true';  
-  }
+  let settingToSave = {compressing: setting.compressing, dateChanging: setting.dateChanging, autoUpdating: setting.autoUpdating};
   let data = JSON.stringify(settingToSave, null, 2);
-  fs.writeFile(SETTING_JSON_PATH, data, (err) => {
-      if (err) throw err;
-      console.log('Data written to file');
-  });
+  console.log('setting.json: ', data)
+  fs.writeFileSync(SETTING_JSON_PATH, data);
 }
 
 // Listen for app to be ready
@@ -108,8 +99,9 @@ app.on('before-quit', function(e) {
       return;
     }
   });
-  //autoModel.quitChrome(); bug occurs!!!!
-  saveSetting();
+  if (!updateTriggered) {
+    saveSetting();
+  }
 });
 
 ipcMain.on(RENDERER_REQ.INIT_SETTING, function() {
@@ -124,15 +116,25 @@ ipcMain.on(RENDERER_REQ.INIT_SETTING, function() {
       packet.dateChanging = true;
       packet.autoUpdating = true;
     } else {
-      // setting.json exists
-      let settingJson = JSON.parse(rawSettingContent);
-      if (settingJson.compressing === 'true') {
+      try {
+        // setting.json exists
+        let settingJson = JSON.parse(rawSettingContent);
+        packet.compressing = settingJson.compressing
+        packet.dateChanging = settingJson.dateChanging
+        packet.autoUpdating = settingJson.autoUpdating
+        /* if (settingJson.compressing === 'true') {
+          packet.compressing = true;
+        }
+        if (settingJson.dateChanging === 'true') {
+          packet.dateChanging = true;
+        }
+        if (settingJson.autoUpdating === 'true') {
+          packet.autoUpdating = true;
+        } */
+      } catch (contentErr) {
+        console.log(contentErr);
         packet.compressing = true;
-      }
-      if (settingJson.dateChanging === 'true') {
         packet.dateChanging = true;
-      }
-      if (settingJson.autoUpdating === 'true') {
         packet.autoUpdating = true;
       }
     }
@@ -158,9 +160,12 @@ ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CONFIRM, function(e, packet) {
   replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packetToReply);
   switch (packet.type) {
     case 'download':
+      cancellationToken = new CancellationToken();
       autoUpdater.downloadUpdate(cancellationToken);
       break;
     case 'update':
+      updateTriggered = true;
+      saveSetting();
       autoUpdater.quitAndInstall(false, false);
       console.log('quit and update');
       break;
