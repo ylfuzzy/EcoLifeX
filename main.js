@@ -246,8 +246,8 @@ ipcMain.on(RENDERER_REQ.GO.CONFIRMED, function(e) {
   console.log(imgSetsForInspect);
   console.log('for cleanUp: ');
   console.log(imgSetsForCleanUp);
-  autoProcess();
-  //testAllUsers();
+  //autoProcess();
+  testAllUsers();
 });
 
 ipcMain.on(RENDERER_REQ.GO.ABORT, function(e) {
@@ -520,12 +520,14 @@ async function testAllUsers() {
   let isForInspect = !isForCleanUp;
   for (let i = 0; i < ids.length; i++) {
     //console.log('Now is testing id: ' + ids[i]);
-    let autoModel = new AutoModel();
-    await autoModel.initChromeDriver();
-    await autoModel.login(ids[i], 'east' + ids[i]);
-    await autoModel.renewRoute(isForCleanUp);
-    let newTitle = await autoModel.renewRoute(isForInspect);
-    await autoModel.quitChrome();
+    if (ids[i] !== '1002101018' && ids[i] !== '1002101016' && ids[i] !== '1002101035' && ids[i] !== '1002101025' && ids[i] !== '1002101033' && ids[i] !== '1002101007') {
+      let autoModel = new AutoModel();
+      await autoModel.initChromeDriver();
+      await autoModel.login(ids[i], 'east' + ids[i]);
+      await autoModel.renewRoute(isForCleanUp);
+      let newTitle = await autoModel.renewRoute(isForInspect);
+      await autoModel.quitChrome();
+    }
   }
 }
 
