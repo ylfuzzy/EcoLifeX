@@ -25,7 +25,7 @@
     "npm": "^5.8.0"
   },
   "build": {
-    "appId": "xyz.bartzutow.ecolifex",
+    "appId": "com.github.ylfuzzy.ecolifex",
     "asar": "true",
     "asarUnpack": [
       "resource/chromedriver.exe"
