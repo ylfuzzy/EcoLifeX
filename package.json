@@ -1,6 +1,6 @@
 {
   "name": "ecolifex",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -27,7 +27,9 @@
   "build": {
     "appId": "xyz.bartzutow.ecolifex",
     "asar": "true",
-    "asarUnpack": ["resource/chromedriver.exe"],
+    "asarUnpack": [
+      "resource/chromedriver.exe"
+    ],
     "win": {
       "target": "nsis"
     },
