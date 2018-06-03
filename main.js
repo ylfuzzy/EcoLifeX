@@ -58,7 +58,6 @@ let downloadAbortByUser;
 function saveSetting() {
   let settingToSave = {compressing: setting.compressing, dateChanging: setting.dateChanging, autoUpdating: setting.autoUpdating};
   let data = JSON.stringify(settingToSave, null, 2);
-  console.log('setting.json: ', data)
   fs.writeFileSync(SETTING_JSON_PATH, data);
 }
 
