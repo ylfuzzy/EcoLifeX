@@ -10,11 +10,12 @@ const ImagesContainer = require(path.normalize(__base + 'js/utility/imagesContai
 const ImagesProcessor = require(path.normalize(__base + 'js/utility/imagesProcessor'));
 const {app, BrowserWindow, ipcMain, dialog} = electron;
 const {autoUpdater, CancellationToken} = require('electron-updater');
+//autoUpdater.setFeedURL('https://bartzutow.xyz:82/');
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = false;
 autoUpdater.logger = require('electron-log');
 autoUpdater.logger.transports.file.level = 'info';
-const SETTING_JSON_PATH = path.normalize(app.getPath('userData') + '/setting.json');//path.join(__userbase, 'setting.json');
+const SETTING_JSON_PATH = path.normalize(app.getPath('userData') + '/setting.json');
 const MODIFIED_IMGS_FOLDER_PATH = path.normalize(app.getPath('userData') + '/modifiedImgs/');
 const RENDERER_REQ = {
   INIT_SETTING: 'REQ:INIT_SETTING',
