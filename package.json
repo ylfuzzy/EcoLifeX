@@ -1,6 +1,6 @@
 {
   "name": "ecolifex",
-  "version": "1.0.4-alpha",
+  "version": "1.0.4-beta",
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -37,8 +37,8 @@
     "publish": [
       {
         "provider": "generic",
-        "url": "https://bartzutow.xyz:5678/beta/",
-        "channel": "beta"
+        "url": "https://bartzutow.xyz:5678/latest/",
+        "channel": "latest"
       },
       {
         "provider": "github",
