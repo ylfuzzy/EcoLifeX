@@ -1,6 +1,6 @@
 {
   "name": "ecolifex",
-  "version": "1.0.4",
+  "version": "1.0.4-alpha",
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -26,7 +26,7 @@
   },
   "build": {
     "appId": "com.github.ylfuzzy.ecolifex",
-    "productName": "EcoLife X",
+    "productName": "EcoLifeX",
     "asar": "true",
     "asarUnpack": [
       "resource/chromedriver.exe"
@@ -37,8 +37,13 @@
     "publish": [
       {
         "provider": "generic",
-        "url": "https://bartzutow.xyz:5678/latest/",
-        "channel": "latest"
+        "url": "https://bartzutow.xyz:5678/beta/",
+        "channel": "beta"
+      },
+      {
+        "provider": "github",
+        "owner": "ylfuzzy",
+        "repo": "EcoLifeX"
       }
     ]
   }

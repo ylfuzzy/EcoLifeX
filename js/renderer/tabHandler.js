@@ -1,13 +1,6 @@
 // Select image by dialog
 let dialogOpened = false;
 $('.css_td').on('click', '.box, .preview', function() {
-  /* console.log('$(this): ', $(this));
-  let preview_arr = $('.preview');
-  console.log('$preview_arr: ', $($('.preview')[0]));
-  if (typeof preview_arr[0] !== 'undefined') {
-    let test_pack = pack($($(preview_arr[0])));
-    console.log(test_pack);
-  } */
   let current = $(this);
   console.log(dialogOpened);
   if (!dialogOpened) {
@@ -42,31 +35,14 @@ $('.css_td').on('drop', '.box, .preview', function(e) {
   console.log(packet);
   ipcRenderer.send(RENDERER_REQ.ADD_IMG, packet);
 });
-/* $('.box, .preview').on('drop', function(e) {
-  let current = $(this);
-  current.css('box-shadow', '');
-  let path = e.originalEvent.dataTransfer.files[0].path;
-  let packet = pack(current);
-  packet.imgPath = path;
-  console.log(packet);
-  ipcRenderer.send(RENDERER_REQ.ADD_IMG, packet);
-}); */
 
 $('.css_td').on('dragover', '.box, .preview', function() {
   $(this).css('box-shadow', '0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)');
 });
-/* $('.box, .preview').on('dragover', function() {
-  console.log('dragover');
-  $(this).css('box-shadow', '0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)');
-}); */
 
 $('.css_td').on('dragleave', '.box, .preview', function() {
   $(this).css('box-shadow', '');
 });
-/* $('.box, .preview').on('dragleave', function() {
-  console.log('dragleave');
-  $(this).css('box-shadow', '');
-}); */
 
 // Right click to delete image
 $('.css_td').on('contextmenu', '.preview', function() {
@@ -150,20 +126,6 @@ $('#input_id').autocomplete({
   minLength: 1, // The minimum length of the input for the autocomplete to start. Default: 1.
 });
 
-// Change setting values
-/* $(':checkbox').on('change', function() {
-  let option = $(this).attr('id');
-  let settingValue = $(this).prop('checked');
-  let packet = {};
-  packet.option = option;
-  packet.settingValue = settingValue;
-  ipcRenderer.send(RENDERER_REQ.CHANGE_OPTION, packet);
-  if (option === 'date_changing') {
-    let isOn = settingValue;
-    let css_displayValue = isOn ? 'block' : 'none';
-    $('#container_pickers').css('display', css_displayValue);
-  }
-}); */
 const START = new Date(new Date().getTime() + 8 * 60 * 60 * 1000);
 const _YEAR = START.getUTCFullYear().toString();
 const _MONTH = (START.getUTCMonth() + 1) < 10 ? '0' + (START.getUTCMonth() + 1).toString() : (START.getUTCMonth() + 1).toString();
@@ -209,7 +171,8 @@ $('.setting').on('click', function() {
 
 $('#check_update').on('click', function() {
   console.log('check update');
-  ipcRenderer.send(RENDERER_REQ.CHECK_UPDATE.CHECK);
+  packet = {updateFromPrimarySource: true};
+  ipcRenderer.send(RENDERER_REQ.CHECK_UPDATE.CHECK, packet);
 });
 
 $('#autoupdating_modal_abort_btn').on('click', function() {
@@ -221,6 +184,11 @@ ipcRenderer.on(MAIN_REPLY.CHECK_UPDATE.CHECK, function(e, packet) {
   showAutoUpdatingModal(packet);
 });
 
+ipcRenderer.on(MAIN_REPLY.CHECK_UPDATE.SWITCH_SOURCE, function(e, packet) {
+  let packetToReply = {updateFromPrimarySource: false};
+  ipcRenderer.send(RENDERER_REQ.CHECK_UPDATE.CHECK, packetToReply);
+});
+
 function showAutoUpdatingModal(packet) {
   let data_hasTurnedOn = $('#autoupdating_modal').data('hasTurnedOn');
   let hasTurnedOn = (typeof data_hasTurnedOn === 'undefined') ? false : data_hasTurnedOn;
@@ -229,10 +197,6 @@ function showAutoUpdatingModal(packet) {
       dismissible: false, // Modal cannot be dismissed by clicking outside of the modal
       complete: function() { // Callback for Modal close
         $('#autoupdating_modal').data('hasTurnedOn', false);
-
-        // buttons
-        /* $('#infoupdating_modal_cancel_btn').removeClass('hide');//.css('display', '');
-        $('#infoupdating_modal_confirm_btn').addClass('hide');//.css('display', 'none'); */
       }
     });
     $('#autoupdating_modal').modal('open');
@@ -285,11 +249,6 @@ function deleteAllImages() {
     ipcRenderer.send(RENDERER_REQ.DEL_IMG, packet);
   }
   return gotImagesToDelete;
-  /* console.log('$preview_arr: ', $($('.preview')[0]));
-  if (typeof preview_arr[0] !== 'undefined') {
-    let test_pack = pack($($(preview_arr[0])));
-    console.log(test_pack);
-  } */
 }
 
 $('#id_datepicker, #id_timepicker').on('change', function() {
@@ -406,14 +365,6 @@ ipcRenderer.on(MAIN_REPLY.ADD_IMG.ACCEPTED, function(e, packet) {
 ipcRenderer.on(MAIN_REPLY.ADD_IMG.REJECTED, function(e, packet) {
   console.log(packet.rejectedReason);
   showAlertModal('無法使用', packet.rejectedReason);
-  /* $('.modal-content').empty();
-  $('.modal-content').append('<h4>無法使用</h4>')
-  $('.modal-content').append('<p>' + packet.rejectedReason + '</p>');
-  $('.modal').modal();
-
-  //now you can open modal from code
-  $('#modal1').modal('open'); */
-  //$('.modal').modal('open');
 });
 
 ipcRenderer.on(MAIN_REPLY.DEL_IMG, function(e, packet) {
@@ -475,11 +426,6 @@ function showAlertModal(title, content) {
 
   //now you can open modal from code
   $('#alert_modal').modal('open');
-  /* $('#modal_confirm_btn').on('click', function() {
-    clickCounter++;
-    console.log('click modal confirm button: ' + clickCounter);
-  }); */
-  //$('.modal').modal('open');
 }
 
 function showConfirmationModal(content) {
@@ -617,12 +563,5 @@ function showCancellationModel() {
 }
 
 ipcRenderer.on(MAIN_REPLY.GO.UPDATE_AUTOPROCESS_INFO, function(e, packet) {
-  /* let indicatorTitle = '準備中...';
-  let preloaderInspect = {turnOn: true, progressPercent: '87%', progressFraction: '87/100'};
-  let preloaderCleanUp = {turnOn: false, progressPercent: '56%', progressFraction: '56/100'};
-  let info = {};
-  info.indicatorTitle = indicatorTitle;
-  info.preloaderInspect = preloaderInspect;
-  info.preloaderCleanUp = preloaderCleanUp; */
   showInfoupdatingModal(packet);
 }); 

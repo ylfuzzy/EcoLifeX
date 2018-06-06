@@ -10,11 +10,12 @@ const ImagesContainer = require(path.normalize(__base + 'js/utility/imagesContai
 const ImagesProcessor = require(path.normalize(__base + 'js/utility/imagesProcessor'));
 const {app, BrowserWindow, ipcMain, dialog} = electron;
 const {autoUpdater, CancellationToken} = require('electron-updater');
-//autoUpdater.setFeedURL('https://bartzutow.xyz:82/');
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = false;
 autoUpdater.logger = require('electron-log');
 autoUpdater.logger.transports.file.level = 'info';
+const PRIMARY_SOURCE = {provider: 'generic', url:'https://bartzutow.xyz:5678/beta/', channel: 'beta'};
+const REDUNDANT_SOURCE = {provider: 'github', owner: 'ylfuzzy', repo: 'EcoLifeX'};
 const SETTING_JSON_PATH = path.normalize(app.getPath('userData') + '/setting.json');
 const MODIFIED_IMGS_FOLDER_PATH = path.normalize(app.getPath('userData') + '/modifiedImgs/');
 const RENDERER_REQ = {
@@ -34,6 +35,7 @@ const MAIN_REPLY = {
   INIT_SETTING: 'REPLY:INIT_SETTING',
   CHECK_UPDATE: {
     CHECK: 'REPLY:CHECK_UPDATE:CHECK',
+    SWITCH_SOURCE: 'REPLY:CHECK_UPDATE:SWITCH_SOURCE',
     NOT_AVAILABLE: 'REPLY:CHECK_UPDATE:NOT_AVAILABLE'
   },
   ADD_IMG: {
@@ -54,6 +56,7 @@ let cancellationToken;
 let updateCheckTriggeredByUser;
 let updateTriggered = false
 let downloadAbortByUser;
+let updateFromPrimarySource;
 
 // Save user setting
 function saveSetting() {
@@ -128,6 +131,8 @@ ipcMain.on(RENDERER_REQ.INIT_SETTING, function() {
     }
     if (packet.autoUpdating) {
       updateCheckTriggeredByUser = false;
+      updateFromPrimarySource = true;
+      autoUpdater.setFeedURL(PRIMARY_SOURCE);
       autoUpdater.checkForUpdates();
       console.log('auto check update');
     }
@@ -136,11 +141,23 @@ ipcMain.on(RENDERER_REQ.INIT_SETTING, function() {
   });
 });
 
-ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CHECK, function() {
-  updateCheckTriggeredByUser = true;
-  downloadAbortByUser = false;
+ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CHECK, function(e, packet) {
+  sourceMesg = ''
+  if (packet.updateFromPrimarySource) {
+    // Updating from primary source means it's running for the first time.
+    // Therefore some vars need to be initalized.
+    updateCheckTriggeredByUser = true;
+    downloadAbortByUser = false;
+    updateFromPrimarySource = true;
+    autoUpdater.setFeedURL(PRIMARY_SOURCE);
+    sourceMesg = 'check update from Bartzutow';
+  } else {
+    updateFromPrimarySource = false;
+    autoUpdater.setFeedURL(REDUNDANT_SOURCE);
+    sourceMesg = 'check update from Github';
+  }
   autoUpdater.checkForUpdates();
-  console.log('check update~');
+  console.log(sourceMesg);
 });
 
 ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CONFIRM, function(e, packet) {
@@ -261,7 +278,7 @@ ipcMain.on(RENDERER_REQ.CHANGE_SETTING, function(e, packet) {
       setting.autoUpdating = packet.option;
       break;
   }
-  console.log(setting);
+  console.log('SETTING CHANGED:\r\n', setting);
 });
 
 autoUpdater.on('checking-for-update', () => {
@@ -299,11 +316,34 @@ autoUpdater.on('update-not-available', (info) => {
 });
 autoUpdater.on('error', (err) => {
   if (!downloadAbortByUser) {
-    let packet = {title: '檢查更新發生錯誤！', showCancelBtn: true, showAbortBtn: false, showConfirmBtn: false, showCircle: false, showProgress: false};
-    replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
-    console.log('error~~~~~');
-    console.log('Error in auto-updater. ' + err);
+    if (updateFromPrimarySource) {
+      console.log('TRY SWITCHING UPDATE SERVER TO GITHUB');
+      let packet = {};
+      replyRendererReq(MAIN_REPLY.CHECK_UPDATE.SWITCH_SOURCE, packet);
+    } else {
+      let packet = {title: '檢查更新發生錯誤！', showCancelBtn: true, showAbortBtn: false, showConfirmBtn: false, showCircle: false, showProgress: false};
+      replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
+      
+    }
+  } else {
+    console.log('DOWNLOAD PROCESS ABORTED BY USER');
   }
+  console.log('Error in auto-updater: ' + err);
+  /* if (updateFromPrimarySource) {
+    if (!downloadAbortByUser) {
+      console.log('TRY SWITCHING UPDATE SERVER TO GITHUB');
+      let packet = {title: '無法從Bartzutow更新，嘗試從Github更新...', switchToRedundantSource: true, showCancelBtn: false, showConfirmBtn: false, showCircle: true, showProgress: false};
+      replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
+      //autoUpdater.checkForUpdates();
+    }
+  } else {
+    if (!downloadAbortByUser) {
+      let packet = {title: '檢查更新發生錯誤！', showCancelBtn: true, showAbortBtn: false, showConfirmBtn: false, showCircle: false, showProgress: false};
+      replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
+      console.log('error~~~~~');
+      console.log('Error in auto-updater. ' + err);
+    }
+  } */
 });
 
 async function getImageValidity(packet) {
@@ -497,6 +537,7 @@ function replyRendererReq(replyType, packet) {
       break;
     case MAIN_REPLY.INIT_SETTING:
     case MAIN_REPLY.CHECK_UPDATE.CHECK:
+    case MAIN_REPLY.CHECK_UPDATE.SWITCH_SOURCE:
     case MAIN_REPLY.ADD_IMG.REJECTED:
     case MAIN_REPLY.DEL_IMG:
     case MAIN_REPLY.GO.PLEASE_CONFIRM:
