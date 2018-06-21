@@ -294,7 +294,7 @@ autoUpdater.on('checking-for-update', () => {
   }
 });
 autoUpdater.on('update-available', (info) => {
-  let packet = {title: '有可用更新，是否立即下載？', showCancelBtn: true, showAbortBtn: false, showConfirmBtn: true, showCircle: false, showProgress: false, type: 'download'};
+  let packet = {title: '有新版本，是否下載並更新？', showCancelBtn: true, showAbortBtn: false, showConfirmBtn: true, showCircle: false, showProgress: false, type: 'download'};
   replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
   console.log('Update available.', info);
 });
@@ -308,9 +308,13 @@ autoUpdater.on('download-progress', (progressObj) => {
   console.log(log_message);
 });
 autoUpdater.on('update-downloaded', (info) => {
-  let packet = {title: '下載完畢，是否立即更新？', showCancelBtn: true, showAbortBtn: false, showConfirmBtn: true, showCircle: false, showProgress: true, progressPercent: '100%', type: 'update'};
-  replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
-  console.log('Update downloaded');
+  let packet = {title: '下載完畢，正關閉程式並更新', showCancelBtn: true, showAbortBtn: false, showConfirmBtn: true, showCircle: false, showProgress: true, progressPercent: '100%', type: 'update'};
+  updateTriggered = true;
+  saveSetting();
+  autoUpdater.quitAndInstall(false, false);
+  console.log('New installer has downloaded. Quit and install');
+  /* replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
+  console.log('Update downloaded'); */
 });
 autoUpdater.on('update-not-available', (info) => {
   if (updateCheckTriggeredByUser) {
@@ -334,21 +338,6 @@ autoUpdater.on('error', (err) => {
     console.log('DOWNLOAD PROCESS ABORTED BY USER');
   }
   console.log('Error in auto-updater: ' + err);
-  /* if (updateFromPrimarySource) {
-    if (!downloadAbortByUser) {
-      console.log('TRY SWITCHING UPDATE SERVER TO GITHUB');
-      let packet = {title: '無法從Bartzutow更新，嘗試從Github更新...', switchToRedundantSource: true, showCancelBtn: false, showConfirmBtn: false, showCircle: true, showProgress: false};
-      replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
-      //autoUpdater.checkForUpdates();
-    }
-  } else {
-    if (!downloadAbortByUser) {
-      let packet = {title: '檢查更新發生錯誤！', showCancelBtn: true, showAbortBtn: false, showConfirmBtn: false, showCircle: false, showProgress: false};
-      replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
-      console.log('error~~~~~');
-      console.log('Error in auto-updater. ' + err);
-    }
-  } */
 });
 
 async function getImageValidity(packet) {
