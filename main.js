@@ -77,6 +77,11 @@ app.on('ready', function() {
     slashes: true
   }));
 
+  // Set a default window size so that the content fits exactly the window size without scrolling. 
+  let defaultWidth = 800;
+  let defaultHeight = 660;
+  mainWindow.setSize(defaultWidth, defaultHeight);
+
   mainWindow.on('closed', function() {
     console.log('app quit');
     app.quit();

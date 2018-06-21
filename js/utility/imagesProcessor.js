@@ -13,7 +13,7 @@ class ImagesProcessor {
       if (await this.__isValidFormat(comparedInfo.newImgPath, 'jpeg') || await this.__isValidFormat(comparedInfo.newImgPath, 'png')) {
         if (!comparedInfo.dateChanging) {
           // read new image's exif
-          console.log('asdfsdfsfs');
+          console.log('read exif from the new image');
           let newImgExif = await fastExif.read(comparedInfo.newImgPath);
 
           // Check whether the DateTimeOriginal exists in this new image's exif
@@ -21,7 +21,7 @@ class ImagesProcessor {
           newImgExif.exif.DateTimeOriginal.getTime();
           imgInfo.dateTimeOriginal = newImgExif.exif.DateTimeOriginal;
           if (typeof comparedInfo.comparedImgDateTimeOriginal !== 'undefined') {
-            console.log('aaaaaaaaaaaaaaaa');
+            console.log('check if both images are on the same day');
             let onTheSameDay = await this.__areOnTheSameDay(imgInfo.dateTimeOriginal, comparedInfo.comparedImgDateTimeOriginal);
             if (!onTheSameDay) {
               imgInfo.isValid = false;
