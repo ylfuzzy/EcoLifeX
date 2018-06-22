@@ -335,11 +335,6 @@ function getPickedDate() {
   return new Date(tempDate.getTime() + 8 * 60 * 60 * 1000);
 }
 
-/* $('#date_changing').on('change', function() {
-  let needsDateChanging = $(this).prop('checked');
-  ipcRenderer.send(RENDERER_REQ.OPTIONS.DATE_CHANGING, needsDateChanging);
-}); */
-
 // callback to initlize setting options
 ipcRenderer.on(MAIN_REPLY.INIT_SETTING, function(e, packet) {
   let headerText = '自動檢查更新' + '(目前版本: v' + packet.version + ')';

@@ -14,7 +14,7 @@ autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = false;
 autoUpdater.logger = require('electron-log');
 autoUpdater.logger.transports.file.level = 'info';
-const PRIMARY_SOURCE = {provider: 'generic', url:'https://bartzutow.xyz:5678/beta/', channel: 'beta'};
+const PRIMARY_SOURCE = {provider: 'generic', url:'https://bartzutow.xyz:5678/latest/', channel: 'latest'};
 const REDUNDANT_SOURCE = {provider: 'github', owner: 'ylfuzzy', repo: 'EcoLifeX'};
 const SETTING_JSON_PATH = path.normalize(app.getPath('userData') + '/setting.json');
 const MODIFIED_IMGS_FOLDER_PATH = path.normalize(app.getPath('userData') + '/modifiedImgs/');
@@ -185,7 +185,6 @@ ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CHECK, function(e, packet) {
 ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CONFIRM, function(e) {
   let packetToReply = {title: '處理中...', showCancelBtn: false, showConfirmBtn: false, showCircle: true, showProgress: false};
   replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packetToReply);
-  //deleteUsedInstallers();
   cancellationToken = new CancellationToken();
   autoUpdater.downloadUpdate(cancellationToken); 
 });
