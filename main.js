@@ -18,6 +18,7 @@ const PRIMARY_SOURCE = {provider: 'generic', url:'https://bartzutow.xyz:5678/lat
 const REDUNDANT_SOURCE = {provider: 'github', owner: 'ylfuzzy', repo: 'EcoLifeX'};
 const SETTING_JSON_PATH = path.normalize(app.getPath('userData') + '/setting.json');
 const MODIFIED_IMGS_FOLDER_PATH = path.normalize(app.getPath('userData') + '/modifiedImgs/');
+const APP_ROAMING_FOLDER_PATH = path.normalize(app.getPath('userData'));
 const RENDERER_REQ = {
   INIT_SETTING: 'REQ:INIT_SETTING',
   CHECK_UPDATE: {
@@ -60,9 +61,24 @@ let updateFromPrimarySource;
 
 // Save user setting
 function saveSetting() {
-  let settingToSave = {compressing: setting.compressing, dateChanging: setting.dateChanging, autoUpdating: setting.autoUpdating};
+  let settingToSave = {compressing: setting.compressing, dateChanging: setting.dateChanging, autoUpdating: setting.autoUpdating, updateTriggered: updateTriggered};
   let data = JSON.stringify(settingToSave, null, 2);
   fs.writeFileSync(SETTING_JSON_PATH, data);
+}
+
+function deleteUsedInstallers() {
+  let pattern = new RegExp('\\.exe$');
+  try {
+    fs.readdirSync(APP_ROAMING_FOLDER_PATH).forEach(file => {
+      if (pattern.test(file)) {
+        let installer_path = path.join(APP_ROAMING_FOLDER_PATH, file);
+        console.log('Delete ', installer_path);
+        fs.unlinkSync(installer_path);
+      }
+    });
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 // Listen for app to be ready
@@ -77,7 +93,7 @@ app.on('ready', function() {
     slashes: true
   }));
 
-  // Set a default window size so that the content fits exactly the window size without scrolling. 
+  // Set a default window size so that the content won't exceed the window's height.
   let defaultWidth = 800;
   let defaultHeight = 660;
   mainWindow.setSize(defaultWidth, defaultHeight);
@@ -114,26 +130,27 @@ ipcMain.on(RENDERER_REQ.INIT_SETTING, function() {
   console.log('SETTING_JSON_PATH: ', SETTING_JSON_PATH);
   //let settingFilePath = __base + 'setting.json';
   fs.readFile(SETTING_JSON_PATH, function(err, rawSettingContent) {
-    let packet = {compressing: false, dateChanging: false, autoUpdating: false, version: app.getVersion()};
-    if (err) {
-      // setting.json doesn't exist, using default setting (turn on all options)
-      packet.compressing = true;
-      packet.dateChanging = true;
-      packet.autoUpdating = true;
-    } else {
+    // If setting.json doesn't exist or cannot properly read options from it,
+    // use default setting (turn on all options)
+    let packet = {compressing: true, dateChanging: true, autoUpdating: true};
+    if (!err) {
+      // setting.json exists
       try {
-        // setting.json exists
         let settingJson = JSON.parse(rawSettingContent);
-        packet.compressing = settingJson.compressing
-        packet.dateChanging = settingJson.dateChanging
-        packet.autoUpdating = settingJson.autoUpdating
+        packet = settingJson;
       } catch (contentErr) {
         console.log(contentErr);
-        packet.compressing = true;
-        packet.dateChanging = true;
-        packet.autoUpdating = true;
       }
     }
+    packet.version = app.getVersion();
+
+    // If packet.updateTriggered is true, it means the software is just updated.
+    // So we need to delete used installers at APP_ROAMING_FOLDER_PATH.
+    if (packet.updateTriggered || typeof packet.updateTriggered === 'undefined') {
+      deleteUsedInstallers();
+    }
+
+    // Check for available update if autoUpdating is turned on.
     if (packet.autoUpdating) {
       updateCheckTriggeredByUser = false;
       updateFromPrimarySource = true;
@@ -147,7 +164,7 @@ ipcMain.on(RENDERER_REQ.INIT_SETTING, function() {
 });
 
 ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CHECK, function(e, packet) {
-  sourceMesg = ''
+  let sourceMesg = ''
   if (packet.updateFromPrimarySource) {
     // Updating from primary source means it's running for the first time.
     // Therefore some vars need to be initalized.
@@ -165,21 +182,12 @@ ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CHECK, function(e, packet) {
   console.log(sourceMesg);
 });
 
-ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CONFIRM, function(e, packet) {
+ipcMain.on(RENDERER_REQ.CHECK_UPDATE.CONFIRM, function(e) {
   let packetToReply = {title: '處理中...', showCancelBtn: false, showConfirmBtn: false, showCircle: true, showProgress: false};
   replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packetToReply);
-  switch (packet.type) {
-    case 'download':
-      cancellationToken = new CancellationToken();
-      autoUpdater.downloadUpdate(cancellationToken);
-      break;
-    case 'update':
-      updateTriggered = true;
-      saveSetting();
-      autoUpdater.quitAndInstall(false, false);
-      console.log('quit and update');
-      break;
-  } 
+  //deleteUsedInstallers();
+  cancellationToken = new CancellationToken();
+  autoUpdater.downloadUpdate(cancellationToken); 
 });
 
 ipcMain.on(RENDERER_REQ.CHECK_UPDATE.ABORT_DOWNLOAD, function() {
@@ -312,7 +320,7 @@ autoUpdater.on('update-downloaded', (info) => {
   updateTriggered = true;
   saveSetting();
   autoUpdater.quitAndInstall(false, false);
-  console.log('New installer has downloaded. Quit and install');
+  console.log('New installer has been downloaded. Installing process begins.');
   /* replyRendererReq(MAIN_REPLY.CHECK_UPDATE.CHECK, packet);
   console.log('Update downloaded'); */
 });

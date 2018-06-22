@@ -228,7 +228,7 @@ function showAutoUpdatingModal(packet) {
     $('#autoupdating_modal_abort_btn').addClass('hide');
   }
   if (packet.showConfirmBtn) {
-    $('#autoupdating_modal_confirm_btn').data('type', packet.type);
+    //$('#autoupdating_modal_confirm_btn').data('type', packet.type);
     $('#autoupdating_modal_confirm_btn').removeClass('hide');
   } else {
     $('#autoupdating_modal_confirm_btn').addClass('hide');
@@ -237,8 +237,7 @@ function showAutoUpdatingModal(packet) {
 
 $('#autoupdating_modal_confirm_btn').on('click', function() {
   console.log('confirm');
-  packet = {type: $('#autoupdating_modal_confirm_btn').data('type')};
-  ipcRenderer.send(RENDERER_REQ.CHECK_UPDATE.CONFIRM, packet);
+  ipcRenderer.send(RENDERER_REQ.CHECK_UPDATE.CONFIRM);
 });
 
 function deleteAllImages() {
