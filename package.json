@@ -37,8 +37,8 @@
     "publish": [
       {
         "provider": "generic",
-        "url": "https://bartzutow.xyz:5678/latest/",
-        "channel": "latest"
+        "url": "https://bartzutow.xyz:5678/beta/",
+        "channel": "beta"
       },
       {
         "provider": "github",
